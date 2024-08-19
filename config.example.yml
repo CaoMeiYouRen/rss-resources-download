@@ -1,0 +1,7 @@
+rssList:
+  - https://example.com/rss
+
+cookiePaths:
+  "www.example.com": ./cookie.txt
+
+dataPath: ./data

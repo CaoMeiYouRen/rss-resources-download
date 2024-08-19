@@ -36,3 +36,7 @@ sessions
 #public
 dist
 temp
+
+config.yml
+
+data
