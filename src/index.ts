@@ -75,6 +75,7 @@ const input = rssList.map((rss) => limit(async () => {
                 cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
                 '-o', //  Set output directory
                 dataPath, //  Set output directory
+                '--playlist', // download all parts.
             ].filter(Boolean)
             const cmd = `you-get ${flags.join(' ')}`
             logger.info(cmd)
