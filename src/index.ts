@@ -86,7 +86,7 @@ const input = rssList.map((rss) => limit(async () => {
             ls.stderr.on('data', (data) => {
                 logger.error(String(data))
             })
-            await ls
+            await to(ls)
         }
     }
 
