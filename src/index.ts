@@ -1,12 +1,18 @@
 import path from 'path'
 import os from 'os'
 import YAML from 'yaml'
-import { $, cd, useBash, usePowerShell, usePwsh, quotePowerShell } from 'zx'
+import { $, usePowerShell, quotePowerShell } from 'zx'
 import RssParser from 'rss-parser'
 import fs from 'fs-extra'
 import { to } from 'await-to-js'
 import log4js from 'log4js'
 import pLimit from 'p-limit'
+import { configDotenv } from 'dotenv'
+import { getCloudCookie, cloudCookie2File } from './cookie'
+
+configDotenv({
+    path: ['.env.local', '.env'],
+})
 
 const logger = log4js.getLogger('rss-resources-download')
 
@@ -20,12 +26,12 @@ if (os.platform() === 'win32') { // 如果是 Windows 系统，则切换到 Powe
 
 const rssParser = new RssParser()
 
-const limit = pLimit(Number(process.env.P_LIMIT || 1))
-
 interface Config {
     rssList: string[]
-    cookiePaths: Record<string, string>
-    dataPath: string
+    dataPath?: string
+    pLimit?: number
+    cookieCloudUrl?: string
+    cookieCloudPassword?: string
 }
 
 const [error1, configFile] = await to(fs.readFile('config.yml', 'utf8'))
@@ -49,12 +55,59 @@ if (error2) {
 
 logger.info(output.stdout)
 
-const { rssList = [], cookiePaths = {}, dataPath: _dataPath = './data' } = CONFIG
+const { rssList = [], dataPath: _dataPath = './data', pLimit: _pLimit = 1, cookieCloudUrl, cookieCloudPassword } = CONFIG
+
+const limit = pLimit(Number(_pLimit || 1))
+
+// 获取 Cookie
+if (cookieCloudUrl) {
+    const data = await getCloudCookie(cookieCloudUrl, cookieCloudPassword)
+    await cloudCookie2File(data)
+}
 
 const dataPath = path.resolve(_dataPath) // 解析为绝对路径
 
 if (!await fs.pathExists(dataPath)) {
     await fs.mkdir(dataPath)
+}
+/**
+ * 获取主域名
+ *
+ * @author CaoMeiYouRen
+ * @date 2024-08-27
+ * @param domain
+ */
+function extractMainDomain(domain: string) {
+    // 移除协议部分（如http:// 或 https://）
+    domain = domain.replace(/(^\w+:|^)\/\//, '')
+
+    // 移除路径部分
+    domain = domain.split('/')[0]
+
+    // 使用正则表达式提取主域名
+    const parts = domain.split('.')
+    const tld = parts.pop() // 假设最后一个部分是顶级域名（TLD）
+    const sld = parts.pop() // 假设倒数第二个部分是二级域名（SLD）
+
+    // 组合主域名
+    const mainDomain = `${sld}.${tld}`
+
+    return mainDomain
+}
+
+async function getCookiePath(host: string) {
+    // 先查找完整域名的 cookie
+    let cookiePath = path.resolve(`cookies/${host}.txt`)
+    if (await fs.pathExists(cookiePath)) {
+        return cookiePath
+    }
+    // 再查找主域名的 cookie
+    cookiePath = path.resolve(`cookies/${extractMainDomain(host)}.txt`)
+    if (await fs.pathExists(cookiePath)) {
+        return cookiePath
+    }
+    // 未查找到返回空
+    return ''
 }
 
 const input = rssList.map((rss) => limit(async () => {
@@ -68,7 +121,8 @@ const input = rssList.map((rss) => limit(async () => {
     for await (const item of items) {
         if (item.link) {
             const link = new URL(item.link)
-            const cookiePath = cookiePaths[link.host]
+            const host = link.host
+            const cookiePath = await getCookiePath(host)
             const flags = [
                 link.toString(),
                 cookiePath && '-c', //  Load cookies.txt or cookies.sqlite

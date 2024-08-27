@@ -1,7 +1,13 @@
+# 订阅源
 rssList:
   - https://example.com/rss
 
-cookiePaths:
-  "www.example.com": ./cookie.txt
-
+# 并发数限制
+pLimit: 1
+# 数据保存地址
 dataPath: ./data
+
+# CookieCloud 地址，详见 https://github.com/easychen/CookieCloud
+cookieCloudUrl: "https://cookiecloud.example.com"
+# CookieCloud 加密密码
+cookieCloudPassword: ""
