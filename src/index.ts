@@ -1,7 +1,7 @@
 import path from 'path'
 import os from 'os'
 import YAML from 'yaml'
-import { $, usePowerShell, quotePowerShell } from 'zx'
+import { $, usePowerShell } from 'zx'
 import RssParser from 'rss-parser'
 import fs from 'fs-extra'
 import { to } from 'await-to-js'
@@ -22,9 +22,16 @@ const logger = log4js.getLogger('rss-resources-download')
 
 logger.level = process.env.LOGGER_LEVEL || 'debug'
 
+function quote(arg: string) {
+    if (/^[a-z0-9/_.-]+$/i.test(arg) || arg === '') {
+        return arg
+    }
+    return `"${arg.replace(/"/g, '`"')}"`
+}
+
 if (os.platform() === 'win32') { // 如果是 Windows 系统，则切换到 PowerShell
     usePowerShell()
-    $.quote = quotePowerShell
+    $.quote = quote
     logger.debug('usePowerShell')
 }
 
@@ -131,14 +138,15 @@ const input = rssList.map((rss) => limit(async () => {
                 ].filter(Boolean)
                 const cmd = `you-get ${flags.join(' ')}`
                 logger.info(cmd)
-                const ls = $`you-get ${flags}`
-                ls.stdout.on('data', (data) => {
-                    logger.info(String(data))
-                })
-                ls.stderr.on('data', (data) => {
-                    logger.error(String(data))
-                })
+                const ls = $`you-get ${flags}`.pipe(process.stdout)
+                // ls.stdout.on('data', (data) => {
+                //     logger.info(String(data))
+                // })
+                // ls.stderr.on('data', (data) => {
+                //     logger.error(String(data))
+                // })
                 await to(ls)
+                logger.info(`下载文件 ${filename}.mp4 成功`)
                 // 下载完成后将该文件添加到上传队列中
                 uploadQueue.add(async () => {
                     const filepath = path.join(dataPath, `${filename}.cmt.xml`) // 上传弹幕文件
@@ -159,5 +167,4 @@ const input = rssList.map((rss) => limit(async () => {
     }
 
 }))
-
 await Promise.allSettled(input)

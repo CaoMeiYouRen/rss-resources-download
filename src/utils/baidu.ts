@@ -80,12 +80,12 @@ async function remove(from: string) {
  */
 async function search(keyword: string, path: string = '/') {
     const flags = [
-        keyword,
         '-path', // 搜索目录
         path,
         '-r', // 递归搜索当前工作目录的文件
+        keyword,
     ]
-    return $`BaiduPCS-Go search ${flags}`
+    return $`BaiduPCS-Go search ${flags}`.pipe(process.stdout).verbose()
 }
 
 export const BaiduPCS = {
