@@ -110,5 +110,5 @@ export async function uniqUpload(filepath: string, uploadPath: string) {
     if (!(await BaiduPCS.search(filename, uploadPath)).text()?.includes('文件总数: 0')) { // 如果未匹配到 "文件总数: 0"，说明已经存在了
         return
     }
-    await BaiduPCS.upload(filepath, uploadPath)
+    return BaiduPCS.upload(filepath, uploadPath)
 }

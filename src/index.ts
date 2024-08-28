@@ -9,7 +9,6 @@ import log4js from 'log4js'
 import pLimit from 'p-limit'
 import { configDotenv } from 'dotenv'
 import PQueue from 'p-queue'
-import { chain } from 'lodash-es'
 import { getCloudCookie, cloudCookie2File } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
 import { getCookiePath, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
@@ -83,6 +82,17 @@ if (!await fs.pathExists(dataPath)) {
 }
 
 // 检查本地文件是否已上传
+const files = await fs.readdir(dataPath)
+
+files.forEach((file) => {
+    uploadQueue.add(async () => {
+        const filepath = path.join(dataPath, file)
+        if (await uniqUpload(filepath, uploadPath)) {
+            const filename = path.basename(filepath)
+            logger.info(`上传文件 ${filename} 成功`)
+        }
+    })
+})
 
 const input = rssList.map((rss) => limit(async () => {
     const [error3, feed] = await to(rssParser.parseURL(rss))
@@ -132,13 +142,17 @@ const input = rssList.map((rss) => limit(async () => {
                 // 下载完成后将该文件添加到上传队列中
                 uploadQueue.add(async () => {
                     const filepath = path.join(dataPath, `${filename}.cmt.xml`) // 上传弹幕文件
-                    await uniqUpload(filepath, uploadPath)
-                    logger.info(`上传文件 ${filename}.cmt.xml 成功`)
+                    if (await uniqUpload(filepath, uploadPath)) {
+                        const _filename = path.basename(filepath)
+                        logger.info(`上传文件 ${_filename} 成功`)
+                    }
                 })
                 uploadQueue.add(async () => {
                     const filepath = path.join(dataPath, `${filename}.mp4`) // 上传视频文件
-                    await uniqUpload(filepath, uploadPath)
-                    logger.info(`上传文件 ${filename}.mp4 成功`)
+                    if (await uniqUpload(filepath, uploadPath)) {
+                        const _filename = path.basename(filepath)
+                        logger.info(`上传文件 ${_filename} 成功`)
+                    }
                 })
             }
         }
