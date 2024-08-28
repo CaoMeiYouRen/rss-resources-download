@@ -12,7 +12,8 @@ import PQueue from 'p-queue'
 import { chain } from 'lodash-es'
 import { getCloudCookie, cloudCookie2File } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
-import { getCookiePath } from './utils/helper'
+import { getCookiePath, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
+import { Config } from './types'
 
 configDotenv({
     path: ['.env.local', '.env'],
@@ -29,16 +30,6 @@ if (os.platform() === 'win32') { // 如果是 Windows 系统，则切换到 Powe
 }
 
 const rssParser = new RssParser()
-
-interface Config {
-    rssList: string[]
-    dataPath?: string
-    pLimit?: number
-    cookieCloudUrl?: string
-    cookieCloudPassword?: string
-    bduss: string
-    uploadPath: string
-}
 
 const [error1, configFile] = await to(fs.readFile('config.yml', 'utf8'))
 if (error1) {
@@ -91,29 +82,7 @@ if (!await fs.pathExists(dataPath)) {
     await fs.mkdir(dataPath)
 }
 
-interface Stream {
-    container: string
-    quality: string
-    src: string[][]
-    size: number
-}
-
-interface Streams {
-    [k: string]: Stream
-}
-
-interface Extra {
-    referer: string
-    ua: string
-}
-
-interface VideoInfo {
-    url: string
-    title: string
-    site: string
-    streams: Streams
-    extra: Extra
-}
+// 检查本地文件是否已上传
 
 const input = rssList.map((rss) => limit(async () => {
     const [error3, feed] = await to(rssParser.parseURL(rss))
@@ -132,46 +101,46 @@ const input = rssList.map((rss) => limit(async () => {
                 link.toString(),
                 cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
                 cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
+                '--playlist', //  download all parts.
                 '--json', // 输出 json 格式
             ]
-            // 如果未指定 cookie，则会多一行 "You will need login cookies for 720p formats or above. (use --cookies to load cookies.txt.)" 的提示
-            const text = (await $`you-get ${infoFlags}`).text()
-            const info: VideoInfo = cookiePath ?
-                JSON.parse(text) :
-                JSON.parse(chain(text)
-                    .split('\n')
-                    .tail() // 获取除了array数组第一个元素以外的全部元素。
-                    .join('\n')
-                    .value(),
-                )
-            const filename = info.title
-            const flags = [
-                link.toString(),
-                cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
-                cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
-                '-o', //  Set output directory
-                dataPath, //  Set output directory
-                '-O',
-                filename, // Set output filename
-                '--playlist', // download all parts.
-            ].filter(Boolean)
-            const cmd = `you-get ${flags.join(' ')}`
-            logger.info(cmd)
-            const ls = $`you-get ${flags}`
-            ls.stdout.on('data', (data) => {
-                logger.info(String(data))
-            })
-            ls.stderr.on('data', (data) => {
-                logger.error(String(data))
-            })
-            await to(ls)
-            // 下载完成后将该文件添加到上传队列中
-            uploadQueue.add(async () => {
-                const filepath = path.join(dataPath, `${filename}.mp4`) // 上传视频文件
-                if (await fs.pathExists(filepath)) {
-                    await BaiduPCS.upload(filepath, uploadPath)
-                }
-            })
+            const text = (await $`you-get ${infoFlags}`).stdout
+            const infos = parseJsonArray(text)
+            for await (const info of infos) {
+                const filename = sanitizeFilename(info.title)
+                const url = info.url
+                const flags = [
+                    url, // 分 P 链接
+                    cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
+                    cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
+                    '-o', //  Set output directory
+                    dataPath, //  Set output directory
+                    '-O',
+                    filename, // Set output filename
+                    // '--playlist', // download all parts.
+                ].filter(Boolean)
+                const cmd = `you-get ${flags.join(' ')}`
+                logger.info(cmd)
+                const ls = $`you-get ${flags}`
+                ls.stdout.on('data', (data) => {
+                    logger.info(String(data))
+                })
+                ls.stderr.on('data', (data) => {
+                    logger.error(String(data))
+                })
+                await to(ls)
+                // 下载完成后将该文件添加到上传队列中
+                uploadQueue.add(async () => {
+                    const filepath = path.join(dataPath, `${filename}.cmt.xml`) // 上传弹幕文件
+                    await uniqUpload(filepath, uploadPath)
+                    logger.info(`上传文件 ${filename}.cmt.xml 成功`)
+                })
+                uploadQueue.add(async () => {
+                    const filepath = path.join(dataPath, `${filename}.mp4`) // 上传视频文件
+                    await uniqUpload(filepath, uploadPath)
+                    logger.info(`上传文件 ${filename}.mp4 成功`)
+                })
+            }
         }
     }
 

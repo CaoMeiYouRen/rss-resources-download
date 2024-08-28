@@ -37,7 +37,7 @@ async function upload(from: string, to: string) {
         from,
         to,
     ]
-    return $`BaiduPCS-Go upload ${flags}`
+    return $`BaiduPCS-Go upload ${flags}`.pipe(process.stdout)
 }
 
 /**
@@ -70,10 +70,29 @@ async function remove(from: string) {
     return $`BaiduPCS-Go rm ${flags}`
 }
 
+/**
+ * 搜索文件夹内的文件
+ *
+ * @author CaoMeiYouRen
+ * @date 2024-08-28
+ * @param keyword
+ * @param [path='/'] 搜索目录，默认为根目录
+ */
+async function search(keyword: string, path: string = '/') {
+    const flags = [
+        keyword,
+        '-path', // 搜索目录
+        path,
+        '-r', // 递归搜索当前工作目录的文件
+    ]
+    return $`BaiduPCS-Go search ${flags}`
+}
+
 export const BaiduPCS = {
     loginByBduss,
     upload,
     move,
     who,
     remove,
+    search,
 }
