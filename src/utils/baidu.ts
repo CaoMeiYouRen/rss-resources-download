@@ -11,7 +11,7 @@ async function loginByBduss(bduss: string) {
     const flags = [
         `-bduss=${bduss}`,
     ]
-    return $`BaiduPCS-Go login ${flags}`
+    return $`BaiduPCS-Go login ${flags}`.pipe(process.stdout)
 }
 
 /**
@@ -21,7 +21,7 @@ async function loginByBduss(bduss: string) {
  * @date 2022-09-18
  */
 async function who() {
-    return $`BaiduPCS-Go who`
+    return $`BaiduPCS-Go who`.pipe(process.stdout)
 }
 
 /**
@@ -37,7 +37,7 @@ async function upload(from: string, to: string) {
         from,
         to,
     ]
-    return $`BaiduPCS-Go upload ${flags}`.pipe(process.stdout)
+    return $`BaiduPCS-Go upload ${flags}`.pipe(process.stdout).verbose()
 }
 
 /**

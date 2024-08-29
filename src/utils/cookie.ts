@@ -47,6 +47,9 @@ function serializeCookie(cookie: Cookie): string {
  */
 export async function cloudCookie2File(data: any) {
     try {
+        if (!await fs.pathExists('cookies')) {
+            await fs.mkdir('cookies')
+        }
         for (const [key, cookies] of Object.entries(data.cookie_data)) {
             let cookieFileContent = '# Netscape HTTP Cookie File\n'
             cookieFileContent += '# http://curl.haxx.se/rfc/cookie_spec.html\n'
@@ -54,9 +57,6 @@ export async function cloudCookie2File(data: any) {
             // const cookies = data.cookie_data[value]
             for (const cookie of (cookies as any)) {
                 cookieFileContent += `${serializeCookie(cookie)}\n`
-            }
-            if (!await fs.pathExists('cookies')) {
-                await fs.mkdir('cookies')
             }
             await fs.writeFile(`cookies/${key}.txt`, cookieFileContent, 'utf-8')
         }

@@ -102,16 +102,20 @@ export function parseJsonArray(input: string): VideoInfo[] {
  * @param uploadPath 远程文件夹路径
  */
 export async function uniqUpload(filepath: string, uploadPath: string) {
-    if (!await fs.pathExists(filepath)) {
-        return
+    try {
+        if (!await fs.pathExists(filepath)) {
+            return
+        }
+        // 代码: 31023
+        const filename = path.basename(filepath)
+        const keyword = filename.slice(0, 22) // 搜索关键词不大于 22 个字符，否则报 31023
+        // 上传之前先检查是否已经存在同名文件了，匹配 文件名
+        const text = (await BaiduPCS.search(keyword, uploadPath)).text()
+        if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了
+            return
+        }
+        return await BaiduPCS.upload(filepath, uploadPath)
+    } catch (error) {
+        console.error(error)
     }
-    // 代码: 31023
-    const filename = path.basename(filepath)
-    const keyword = filename.slice(0, 22) // 搜索关键词不大于 22 个字符，否则报 31023
-    // 上传之前先检查是否已经存在同名文件了，匹配 文件名
-    const text = (await BaiduPCS.search(keyword, uploadPath)).text()
-    if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了
-        return
-    }
-    return BaiduPCS.upload(filepath, uploadPath)
 }
