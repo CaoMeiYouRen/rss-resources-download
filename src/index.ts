@@ -6,7 +6,6 @@ import RssParser from 'rss-parser'
 import fs from 'fs-extra'
 import { to } from 'await-to-js'
 import log4js from 'log4js'
-import pLimit from 'p-limit'
 import { configDotenv } from 'dotenv'
 import PQueue from 'p-queue'
 import { getCloudCookie, cloudCookie2File } from './utils/cookie'
@@ -48,12 +47,12 @@ const CONFIG = YAML.parse(configFile) as Config
 
 logger.debug(CONFIG)
 
-const { rssList = [], dataPath: _dataPath = './data', pLimit: _pLimit = 1, cookieCloudUrl, cookieCloudPassword, bduss, uploadPath } = CONFIG
+const { rssList = [], dataPath: _dataPath = './data', uploadLimit = 1, downloadLimit = 1, cookieCloudUrl, cookieCloudPassword, bduss, uploadPath } = CONFIG
 // 下载并发限制
-const limit = pLimit(Number(_pLimit || 1))
+const downloadQueue = new PQueue({ concurrency: downloadLimit || 1 })
 
 // 上传队列
-const uploadQueue = new PQueue({ concurrency: _pLimit || 1 })
+const uploadQueue = new PQueue({ concurrency: uploadLimit || 1 })
 
 // 检查 you-get 是否已安装
 const [error2] = await to($`you-get -V`.pipe(process.stdout))
@@ -99,7 +98,7 @@ files.forEach((file) => {
     })
 })
 
-const input = rssList.map((rss) => limit(async () => {
+const input = rssList.map((rss) => async () => {
     const [error3, feed] = await to(rssParser.parseURL(rss))
     if (error3) {
         logger.error(`请求 rss "${rss}" 失败！\n`, error3.stack)
@@ -158,5 +157,6 @@ const input = rssList.map((rss) => limit(async () => {
         }
     }
 
-}))
-await Promise.allSettled(input)
+})
+
+await downloadQueue.addAll(input)

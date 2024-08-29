@@ -1,11 +1,12 @@
 export interface Config {
     rssList: string[]
     dataPath?: string
-    pLimit?: number
     cookieCloudUrl?: string
     cookieCloudPassword?: string
     bduss: string
     uploadPath: string
+    uploadLimit?: number
+    downloadLimit?: number
 }
 
 interface Stream {
