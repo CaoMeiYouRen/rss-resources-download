@@ -114,7 +114,9 @@ export async function uniqUpload(filepath: string, uploadPath: string) {
         if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了
             return
         }
-        return await BaiduPCS.upload(filepath, uploadPath)
+        const output = await BaiduPCS.upload(filepath, uploadPath)
+        console.info(`上传文件 ${filename} 成功`)
+        return output
     } catch (error) {
         console.error(error)
     }

@@ -5,6 +5,7 @@ export interface Config {
     cookieCloudPassword?: string
     bduss: string
     uploadPath: string
+    rssLimit?: number
     uploadLimit?: number
     downloadLimit?: number
     cronTime?: string

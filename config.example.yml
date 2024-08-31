@@ -1,7 +1,8 @@
 # 订阅源
 rssList:
   - https://example.com/rss
-
+# RSS 请求并发限制
+rssLimit: 1
 # 上传并发限制
 uploadLimit: 1
 # 下载并发限制
