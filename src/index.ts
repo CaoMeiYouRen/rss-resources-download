@@ -110,9 +110,11 @@ const resourceRepository = dataSource.getRepository(Resource)
 const files = await fs.readdir(dataPath)
 
 for await (const file of files) {
+    if (file.endsWith('.download')) { // 过滤未下载完成的文件
+        continue
+    }
     if (!await resourceRepository.findOne({ where: { name: file } })) { // 如果没在数据库，则写入记录
         const filepath = path.normalize(path.join(dataPath, file))
-        // logger.info(filepath)
         if (!await fs.pathExists(filepath)) { // 如果有表情字符会解析失败
             continue
         }
@@ -138,7 +140,6 @@ const localResources = await resourceRepository.find({ where: { uploadStatus: 'u
 uploadQueue.addAll(localResources.map((r) => async () => {
     if (await uniqUpload(r.localPath, uploadPath)) {
         r.uploadStatus = 'success'
-
     } else {
         r.uploadStatus = 'fail'
     }
