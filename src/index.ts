@@ -88,15 +88,6 @@ if ((await BaiduPCS.who()).text()?.includes('uid: 0')) { // 未登录
     logger.info((await BaiduPCS.loginByBduss(bduss)).stdout)
 }
 
-// 获取 Cookie
-if (cookieCloudUrl) {
-    logger.info('正在获取 Cookie')
-    const data = await getCloudCookie(cookieCloudUrl, cookieCloudPassword)
-    if (data) {
-        await cloudCookie2File(data)
-    }
-    logger.info('获取 Cookie 成功')
-}
 const dataPath = path.resolve(_dataPath) // 解析为绝对路径
 
 if (!await fs.pathExists(dataPath)) {
@@ -158,6 +149,19 @@ uploadQueue.addAll(localResources.map((r) => async () => {
 }))
 
 const task = async () => {
+
+    // 获取 Cookie
+    if (cookieCloudUrl) {
+        logger.info('正在获取 Cookie')
+        const [cookieError, data] = await to(getCloudCookie(cookieCloudUrl, cookieCloudPassword))
+        if (cookieError) {
+            logger.error('获取 Cookie失败！\n', cookieError.stack)
+        } else if (data) {
+            await cloudCookie2File(data)
+            logger.info('获取 Cookie 成功')
+        }
+    }
+
     const input = rssList.map((rss) => async () => {
         const [error3, feed] = await to(rssParser.parseURL(rss))
         if (error3) {
