@@ -17,6 +17,7 @@ export class Resource {
 
     // 文件名称
     @Column({
+        type: 'varchar',
         length: 1024,
         nullable: true,
     })
@@ -24,6 +25,7 @@ export class Resource {
 
     // 本地文件路径
     @Column({
+        type: 'varchar',
         length: 2048,
         nullable: true,
     })
@@ -31,6 +33,7 @@ export class Resource {
 
     // 远程文件路径
     @Column({
+        type: 'varchar',
         length: 2048,
         nullable: true,
     })
@@ -38,22 +41,27 @@ export class Resource {
 
     // 文件类型
     @Column({
+        type: 'varchar',
         length: 128,
     })
     type: string
 
     // 文件体积(B)
-    @Column({})
+    @Column({
+        type: 'int',
+    })
     size: number
 
     // 文件下载状态
     @Column({
+        type: 'varchar',
         length: 16,
     })
     downloadStatus: StatusType
 
     // 文件上传状态
     @Column({
+        type: 'varchar',
         length: 16,
     })
     uploadStatus: StatusType

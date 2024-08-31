@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import path from 'path'
 import os from 'os'
 import YAML from 'yaml'
@@ -77,10 +78,13 @@ if ((await BaiduPCS.who()).text()?.includes('uid: 0')) { // 未登录
 
 // 获取 Cookie
 if (cookieCloudUrl) {
+    logger.info('正在获取 Cookie')
     const data = await getCloudCookie(cookieCloudUrl, cookieCloudPassword)
-    await cloudCookie2File(data)
+    if (data) {
+        await cloudCookie2File(data)
+    }
+    logger.info('获取 Cookie 成功')
 }
-
 const dataPath = path.resolve(_dataPath) // 解析为绝对路径
 
 if (!await fs.pathExists(dataPath)) {
@@ -104,7 +108,11 @@ const files = await fs.readdir(dataPath)
 
 for await (const file of files) {
     if (!await resourceRepository.findOne({ where: { name: file } })) { // 如果没在数据库，则写入记录
-        const filepath = path.join(dataPath, file)
+        const filepath = path.normalize(path.join(dataPath, file))
+        // logger.info(filepath)
+        if (!await fs.pathExists(filepath)) { // 如果有表情字符会解析失败
+            continue
+        }
         const size = (await fs.stat(filepath)).size
         const type = (await fileTypeFromFile(filepath)).mime
         const newResource: Partial<Resource> = {
@@ -125,13 +133,13 @@ for await (const file of files) {
 const localResources = await resourceRepository.find({ where: { uploadStatus: 'unknown' } })
 
 uploadQueue.addAll(localResources.map((r) => async () => {
-        if (await uniqUpload(r.localPath, uploadPath)) {
-            r.uploadStatus = 'success'
-        } else {
-            r.uploadStatus = 'fail'
-        }
-        await resourceRepository.save(r)
-    }))
+    if (await uniqUpload(r.localPath, uploadPath)) {
+        r.uploadStatus = 'success'
+    } else {
+        r.uploadStatus = 'fail'
+    }
+    await resourceRepository.save(r)
+}))
 
 const task = async () => {
     const input = rssList.map((rss) => async () => {
@@ -143,121 +151,126 @@ const task = async () => {
         const { title, items } = feed
         logger.info(`正在下载 ${title} 的资源……`)
         const downloadInput = items.map((item) => async () => {
-                if (!item.link) {
-                    return
-                }
-                const link = new URL(item.link).toString()
-                // 检查该 rss link 是否已下载过
-                if (await articleRepository.findOne({ where: { link } })) { // 如果已经下载，则跳过
-                    return
-                }
-                const newArticle: Partial<Article> = {
-                    link: link?.slice(0, 2048),
-                    title: item.title?.slice(0, 256),
-                }
-                await articleRepository.save(newArticle)
+            if (!item.link) {
+                return
+            }
+            const link = new URL(item.link).toString()
+            // 检查该 rss link 是否已下载过
+            if (await articleRepository.findOne({ where: { link } })) { // 如果已经下载，则跳过
+                return
+            }
+            const newArticle: Partial<Article> = {
+                link: link?.slice(0, 2048),
+                title: item.title?.slice(0, 256),
+            }
+            await articleRepository.save(newArticle)
 
-                const host = new URL(item.link).host
-                const cookiePath = await getCookiePath(host)
-                const infoFlags = [
-                    link,
-                    cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
-                    cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
-                    '--playlist', //  download all parts.
-                    '--json', // 输出 json 格式
-                ]
-                const text = (await $`you-get ${infoFlags}`).stdout
-                const infos = parseJsonArray(text) // 一个视频可能有多个分 P
-                for await (const info of infos) {
-                    const filename = sanitizeFilename(info.title)
-                    const url = info.url
-                    // 检查 .mp4 文件是否被下载
-                    const videoFilename = `${filename}.mp4`
-                    const cmtFilename = `${filename}.cmt.xml`
-                    // 检查该 url 是否被下载过
-                    let resource: Partial<Resource> = await resourceRepository.findOne({ where: { url, name: videoFilename } })
-                    if (!resource) {
-                        resource = {
-                            url,
-                            name: videoFilename,
-                            localPath: path.join(dataPath, videoFilename),
-                            remotePath: `${uploadPath}/${videoFilename}`,
-                            type: '',
-                            size: 0,
-                            downloadStatus: 'unknown',
-                            uploadStatus: 'unknown',
-                        }
-                        resource = await resourceRepository.save(resource)
+            const host = new URL(item.link).host
+            const cookiePath = await getCookiePath(host)
+            const infoFlags = [
+                link,
+                cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
+                cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
+                '--playlist', //  download all parts.
+                '--json', // 输出 json 格式
+            ]
+            const text = (await $`you-get ${infoFlags}`).stdout
+            const infos = parseJsonArray(text) // 一个视频可能有多个分 P
+            for await (const info of infos) {
+                const filename = sanitizeFilename(info.title)
+                const url = info.url
+                // 检查 .mp4 文件是否被下载
+                const videoFilename = `${filename}.mp4`
+                const cmtFilename = `${filename}.cmt.xml`
+                // 检查该 url 是否被下载过
+                let resource: Partial<Resource> = await resourceRepository.findOne({ where: { url, name: videoFilename } })
+                if (!resource) {
+                    resource = {
+                        url,
+                        name: videoFilename,
+                        localPath: path.join(dataPath, videoFilename),
+                        remotePath: `${uploadPath}/${videoFilename}`,
+                        type: '',
+                        size: 0,
+                        downloadStatus: 'unknown',
+                        uploadStatus: 'unknown',
                     }
-                    if (resource.uploadStatus === 'success') { // 如果已下载并上传了，则跳过
-                        return
+                    resource = await resourceRepository.save(resource)
+                }
+                if (resource.uploadStatus === 'success') { // 如果已下载并上传了，则跳过
+                    return
+                }
+                if (resource.downloadStatus !== 'success') { // 如果不为 success，则重新下载
+                    const flags = [
+                        url, // 分 P 链接
+                        cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
+                        cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
+                        '-o', //  Set output directory
+                        dataPath, //  Set output directory
+                        '-O',
+                        filename, // Set output filename
+                        // '--playlist', // download all parts.
+                    ].filter(Boolean)
+                    const cmd = `you-get ${flags.join(' ')}`
+                    logger.info(cmd)
+                    const ls = $`you-get ${flags}`.pipe(process.stdout).verbose()
+                    const [downloadError] = await to(ls)
+                    if (downloadError) {
+                        logger.info(`下载文件 ${videoFilename} 失败`)
+                        resource.downloadStatus = 'fail'
+                    } else {
+                        logger.info(`下载文件 ${videoFilename} 成功`)
+                        resource.downloadStatus = 'success'
+                        const filepath = path.join(dataPath, videoFilename)
+                        const size = (await fs.stat(filepath)).size
+                        const type = (await fileTypeFromFile(filepath)).mime
+                        resource.size = size
+                        resource.type = type
                     }
-                    if (resource.downloadStatus !== 'success') { // 如果不为 success，则重新下载
-                        const flags = [
-                            url, // 分 P 链接
-                            cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
-                            cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
-                            '-o', //  Set output directory
-                            dataPath, //  Set output directory
-                            '-O',
-                            filename, // Set output filename
-                            // '--playlist', // download all parts.
-                        ].filter(Boolean)
-                        const cmd = `you-get ${flags.join(' ')}`
-                        logger.info(cmd)
-                        const ls = $`you-get ${flags}`.pipe(process.stdout).verbose()
-                        const [downloadError] = await to(ls)
-                        if (downloadError) {
-                            logger.info(`下载文件 ${videoFilename} 失败`)
-                            resource.downloadStatus = 'fail'
-                        } else {
-                            logger.info(`下载文件 ${videoFilename} 成功`)
-                            resource.downloadStatus = 'success'
-                        }
-                        resource = await resourceRepository.save(resource)
+                    resource = await resourceRepository.save(resource)
+                }
+                // 下载完成后将该文件添加到上传队列中
+                uploadQueue.add(async () => {
+                    const filepath = path.join(dataPath, videoFilename) // 上传视频文件
+                    if (await uniqUpload(filepath, uploadPath)) {
+                        resource.uploadStatus = 'success'
+                    } else {
+                        resource.uploadStatus = 'fail'
                     }
-                    // 下载完成后将该文件添加到上传队列中
+                    await resourceRepository.save(resource)
+
+                })
+                if (resource.downloadStatus === 'success') {
+                    // 检查 .cmt.xml 文件是否被下载
                     uploadQueue.add(async () => {
-                        const filepath = path.join(dataPath, videoFilename) // 上传视频文件
-                        if (await uniqUpload(filepath, uploadPath)) {
-                            resource.uploadStatus = 'success'
-                        } else {
-                            resource.uploadStatus = 'fail'
+                        const filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
+                        if (!await fs.pathExists(filepath)) {
+                            return
                         }
-                        await resourceRepository.save(resource)
-
-                    })
-                    if (resource.downloadStatus === 'success') {
-                        // 检查 .cmt.xml 文件是否被下载
-                        uploadQueue.add(async () => {
-                            const filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
-                            if (!await fs.pathExists(filepath)) {
-                                return
-                            }
-                            const size = (await fs.stat(filepath)).size
-                            const type = (await fileTypeFromFile(filepath)).mime
-                            const cmtResource = resourceRepository.create({
-                                ...resource,
-                                id: undefined,
-                                name: cmtFilename,
-                                localPath: filepath,
-                                remotePath: `${uploadPath}/${cmtFilename}`,
-                                type,
-                                size,
-                                downloadStatus: 'success',
-                                uploadStatus: 'unknown',
-                            })
-                            if (await uniqUpload(filepath, uploadPath)) {
-                                cmtResource.uploadStatus = 'success'
-                            } else {
-                                cmtResource.uploadStatus = 'fail'
-                            }
-                            await resourceRepository.save(cmtResource)
+                        const size = (await fs.stat(filepath)).size
+                        const type = (await fileTypeFromFile(filepath)).mime
+                        const cmtResource = resourceRepository.create({
+                            ...resource,
+                            id: undefined,
+                            name: cmtFilename,
+                            localPath: filepath,
+                            remotePath: `${uploadPath}/${cmtFilename}`,
+                            type,
+                            size,
+                            downloadStatus: 'success',
+                            uploadStatus: 'unknown',
                         })
-                    }
+                        if (await uniqUpload(filepath, uploadPath)) {
+                            cmtResource.uploadStatus = 'success'
+                        } else {
+                            cmtResource.uploadStatus = 'fail'
+                        }
+                        await resourceRepository.save(cmtResource)
+                    })
                 }
+            }
 
-            })
+        })
         await downloadQueue.addAll(downloadInput)
     })
 
@@ -281,4 +294,5 @@ if (cronTime) {
     logger.info(`下次执行时间：${timeFormat(job.nextDate().toJSDate())}`)
 } else {
     await task()
+    await dataSource.destroy()
 }

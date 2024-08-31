@@ -1,8 +1,4 @@
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-dayjs.extend(utc)
-dayjs.extend(timezone)
 
 /**
  * 格式化时间
@@ -19,5 +15,5 @@ export function timeFormat(date: number | string | Date = Date.now(), pattern: s
             date *= 1000
         }
     }
-    return dayjs(date).tz().format(pattern)
+    return dayjs(date).format(pattern)
 }

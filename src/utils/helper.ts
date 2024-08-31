@@ -53,8 +53,12 @@ export async function getCookiePath(host: string) {
 export function sanitizeFilename(filename: string): string {
     // 定义非法字符集合
     const illegalChars = /[/?<>\\:*|":]/g
+    // 定义表情符号的正则表达式
+    // 一个广泛接受的表情符号正则表达式，涵盖了大部分常见的表情符号。
+    // 如果文件路径中有表情符号，会导致 fs.stat 的 ENOENT 错误
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu
     // 将非法字符替换为下划线
-    return filename.replace(illegalChars, '_')
+    return filename.replace(illegalChars, '_').replace(emojiRegex, '_')
 }
 
 /**
@@ -106,9 +110,8 @@ export async function uniqUpload(filepath: string, uploadPath: string) {
         if (!await fs.pathExists(filepath)) {
             return
         }
-        // 代码: 31023
         const filename = path.basename(filepath)
-        const keyword = filename.slice(0, 22) // 搜索关键词不大于 22 个字符，否则报 31023
+        const keyword = filename.slice(0, 20) // 搜索关键词不大于 22 个字符，否则报 31023
         // 上传之前先检查是否已经存在同名文件了，匹配 文件名
         const text = (await BaiduPCS.search(keyword, uploadPath)).text()
         if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了

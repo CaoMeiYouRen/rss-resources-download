@@ -7,12 +7,14 @@ export class Article {
     id: number
 
     @Column({
+        type: 'varchar',
         length: 2048,
         nullable: true,
     })
     link: string
 
     @Column({
+        type: 'varchar',
         length: 256,
         nullable: true,
     })

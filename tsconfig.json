@@ -5,6 +5,7 @@
         "noImplicitAny": false,
         "allowJs": true,
         "checkJs": true,
+        "strict": false,
         "sourceMap": false,
         "rootDir": "./src",
         "outDir": "./dist",
@@ -17,6 +18,7 @@
         "resolveJsonModule": true,
         "moduleResolution": "node",
         "esModuleInterop": true,
+        "emitDecoratorMetadata": true,
         "baseUrl": ".",
         "paths": {
             "@/*": [
