@@ -321,5 +321,7 @@ if (cronTime) {
     logger.info(`下次执行时间：${timeFormat(job.nextDate().toJSDate())}`)
 } else {
     await task()
-    await dataSource.destroy()
+    uploadQueue.on('idle', async () => {
+        await dataSource.destroy()
+    })
 }
