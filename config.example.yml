@@ -21,3 +21,6 @@ uploadPath: "/videos"
 
 # 定时执行。如果留空，则立即执行一次，否则定时执行
 cronTime: ""
+
+# 自动删除已经上传的文件
+autoRemove: false

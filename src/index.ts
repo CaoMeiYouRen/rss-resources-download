@@ -47,7 +47,19 @@ const CONFIG = YAML.parse(configFile) as Config
 
 logger.debug(CONFIG)
 
-const { rssList = [], dataPath: _dataPath = './data', uploadLimit = 1, downloadLimit = 1, rssLimit = 1, cookieCloudUrl, cookieCloudPassword, bduss, uploadPath, cronTime = '' } = CONFIG
+const {
+    rssList = [],
+    dataPath: _dataPath = './data',
+    uploadLimit = 1,
+    downloadLimit = 1,
+    rssLimit = 1,
+    cookieCloudUrl,
+    cookieCloudPassword,
+    bduss,
+    uploadPath,
+    cronTime = '',
+    autoRemove = false,
+} = CONFIG
 
 const rssQueue = new PQueue({ concurrency: rssLimit || 1 })
 
@@ -135,10 +147,14 @@ const localResources = await resourceRepository.find({ where: { uploadStatus: 'u
 uploadQueue.addAll(localResources.map((r) => async () => {
     if (await uniqUpload(r.localPath, uploadPath)) {
         r.uploadStatus = 'success'
+
     } else {
         r.uploadStatus = 'fail'
     }
     await resourceRepository.save(r)
+    if (r.uploadStatus === 'success' && autoRemove) {
+        await fs.remove(r.localPath) // 自动删除
+    }
 }))
 
 const task = async () => {
@@ -238,6 +254,9 @@ const task = async () => {
                         resource.uploadStatus = 'fail'
                     }
                     await resourceRepository.save(resource)
+                    if (resource.uploadStatus === 'success' && autoRemove) {
+                        await fs.remove(resource.localPath) // 自动删除
+                    }
 
                 })
                 if (resource.downloadStatus === 'success') {
@@ -266,6 +285,9 @@ const task = async () => {
                             cmtResource.uploadStatus = 'fail'
                         }
                         await resourceRepository.save(cmtResource)
+                        if (cmtResource.uploadStatus === 'success' && autoRemove) {
+                            await fs.remove(cmtResource.localPath) // 自动删除
+                        }
                     })
                 }
             }

@@ -9,6 +9,7 @@ export interface Config {
     uploadLimit?: number
     downloadLimit?: number
     cronTime?: string
+    autoRemove: boolean
 }
 
 interface Stream {
