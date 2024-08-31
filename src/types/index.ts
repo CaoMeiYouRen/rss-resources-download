@@ -7,6 +7,7 @@ export interface Config {
     uploadPath: string
     uploadLimit?: number
     downloadLimit?: number
+    cronTime?: string
 }
 
 interface Stream {

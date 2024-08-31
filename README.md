@@ -14,7 +14,7 @@
 </p>
 
 
-> 基于 rss 和 you-get 的视频、音频、图片下载器
+> 基于 rss、you-get、BaiduPCS-Go 的视频、音频、图片下载器和上传器
 
 ## 🏠 主页
 

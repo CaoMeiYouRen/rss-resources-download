@@ -2,8 +2,10 @@
 rssList:
   - https://example.com/rss
 
-# 并发数限制
-pLimit: 1
+# 上传并发限制
+uploadLimit: 1
+# 下载并发限制
+downloadLimit: 1
 # 数据保存地址
 dataPath: ./data
 
@@ -15,3 +17,6 @@ cookieCloudPassword: ""
 bduss: ""
 # 上传到的路径
 uploadPath: "/videos"
+
+# 定时执行。如果留空，则立即执行一次，否则定时执行
+cronTime: ""
