@@ -273,7 +273,7 @@ const task = async () => {
                         }
                         const size = (await fs.stat(filepath)).size
                         const type = (await fileTypeFromFile(filepath)).mime
-                        const cmtResource = resourceRepository.create({
+                        let cmtResource: Partial<Resource> = resourceRepository.create({
                             ...resource,
                             id: undefined,
                             name: cmtFilename,
@@ -284,6 +284,7 @@ const task = async () => {
                             downloadStatus: 'success',
                             uploadStatus: 'unknown',
                         })
+                        cmtResource = await resourceRepository.save(cmtResource)
                         if (await uniqUpload(filepath, uploadPath)) {
                             cmtResource.uploadStatus = 'success'
                         } else {
