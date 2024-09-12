@@ -195,7 +195,12 @@ const task = async () => {
                 '--playlist', //  download all parts.
                 '--json', // 输出 json 格式
             ]
-            const text = (await $`you-get ${infoFlags}`).stdout
+            const [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
+            if (infoError) {
+                logger.info(`获取 ${link} 文件信息失败`, infoError.stack)
+                return
+            }
+            const text = infoOutput.stdout
             const infos = parseJsonArray(text) // 一个视频可能有多个分 P
             for await (const info of infos) {
                 const filename = sanitizeFilename(info.title)

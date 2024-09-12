@@ -51,14 +51,10 @@ export async function getCookiePath(host: string) {
  * @param filename
  */
 export function sanitizeFilename(filename: string): string {
-    // 定义非法字符集合
-    const illegalChars = /[/?<>\\:*|":]/g
-    // 定义表情符号的正则表达式
-    // 一个广泛接受的表情符号正则表达式，涵盖了大部分常见的表情符号。
-    // 如果文件路径中有表情符号，会导致 fs.stat 的 ENOENT 错误
-    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu
+    // 匹配 不是中文字符、英文字母、数字、下划线和连字符的字符
+    const patternRegex = /[^\u4E00-\u9FA5A-Za-z0-9_-]/g
     // 将非法字符替换为下划线
-    return filename.replace(illegalChars, '_').replace(emojiRegex, '_')
+    return filename.replace(patternRegex, '_')
 }
 
 /**
