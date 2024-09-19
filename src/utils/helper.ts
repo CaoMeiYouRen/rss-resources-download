@@ -51,18 +51,14 @@ export async function getCookiePath(host: string) {
  * @param filename
  */
 export function sanitizeFilename(filename: string): string {
-    // 在文件名中不合法的字符
-    const unsafeChars = /[/?<>\\:*|":]/g
     // 定义非法字符集合
-    // 匹配所有不符合中日文字、英文、数字、下划线和连字符的字符
-    // 中文字符：\u4E00-\u9FFF
-    // 日文平假名：\u3040-\u309F
-    // 日文片假名：\u30A0-\u30FF
-    // 日文汉字：\u4E00-\u9FFF
-    // 日文其他字符：\u3005\u3007\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FD-\u30FF\u31F0-\u31FF\u32D0-\u32FE\u3300-\u33FF\uFF66-\uFF9F\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A
-    const illegalChars = /[^a-zA-Z0-9_\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\u31F0-\u31FF\uAC00-\uD7AF\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u3005\u3007\u303B\u303C\u3041-\u3096\u309D-\u309F\u30A1-\u30FA\u30FD-\u30FF\u31F0-\u31FF\u32D0-\u32FE\u3300-\u33FF\uFF66-\uFF9F\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A]/g
+    const illegalChars = /[/?<>\\:*|":]/g
+    // 定义表情符号的正则表达式
+    // 一个广泛接受的表情符号正则表达式，涵盖了大部分常见的表情符号。
+    // 如果文件路径中有表情符号，会导致 fs.stat 的 ENOENT 错误
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}]/gu
     // 将非法字符替换为下划线
-    return filename.replace(illegalChars, '_').replace(unsafeChars, '_')
+    return filename.replace(illegalChars, '_').replace(emojiRegex, '_')
 }
 
 /**
