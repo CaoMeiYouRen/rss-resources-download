@@ -188,17 +188,23 @@ const task = async () => {
 
             const host = new URL(item.link).host
             const cookiePath = await getCookiePath(host)
+            // 部分情况下添加 --playlist 参数会获取失败（例如：在 B 站视频为特殊页面时，而不是普通视频时）
             const infoFlags = [
                 link,
                 cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
                 cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
-                '--playlist', //  download all parts.
                 '--json', // 输出 json 格式
+                '--playlist', //  download all parts.
             ]
-            const [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
+            let [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
             if (infoError) {
                 logger.info(`获取 ${link} 文件信息失败`, infoError.stack)
-                return
+                infoFlags.pop(); // 删除最后一个参数 '--playlist'
+                // 重新发起请求
+                [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
+                if (infoError) { // 如果还失败就退出
+                    return
+                }
             }
             const text = infoOutput.stdout
             const infos = parseJsonArray(text) // 一个视频可能有多个分 P
