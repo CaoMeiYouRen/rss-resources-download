@@ -11,7 +11,8 @@ downloadLimit: 1
 dataPath: ./data
 
 # CookieCloud 地址，详见 https://github.com/easychen/CookieCloud
-cookieCloudUrl: "https://cookiecloud.example.com"
+# 也可以使用 cookie-cloudflare，提供兼容 API，详见 https://github.com/CaoMeiYouRen/cookie-cloudflare
+cookieCloudUrl: "https://cookiecloud.example.com/get/ABCDEF"
 # CookieCloud 加密密码
 cookieCloudPassword: ""
 # 百度网盘 bduss

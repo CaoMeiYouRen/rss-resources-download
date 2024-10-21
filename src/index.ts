@@ -195,7 +195,7 @@ const task = async () => {
                 cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
                 '--json', // 输出 json 格式
                 '--playlist', //  download all parts.
-            ]
+            ].filter(Boolean)
             let [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
             if (infoError) {
                 logger.info(`获取 ${link} 文件信息失败`, infoError.stack)
