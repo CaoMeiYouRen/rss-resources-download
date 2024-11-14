@@ -198,19 +198,21 @@ const task = async () => {
             ].filter(Boolean)
             let [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
             if (infoError) {
-                logger.info(`获取 ${link} 文件信息失败`, infoError.stack)
+                logger.error(`获取 ${link} 文件信息失败`, infoError.stack)
                 infoFlags.pop(); // 删除最后一个参数 '--playlist'
                 // 重新发起请求
                 [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
                 if (infoError) { // 如果还失败就退出
+                    logger.error(`获取 ${link} 文件信息失败`, infoError.stack)
                     return
                 }
             }
             const text = infoOutput.stdout
             const infos = parseJsonArray(text) // 一个视频可能有多个分 P
             for await (const info of infos) {
-                const filename = sanitizeFilename(info.title)
                 const url = info.url
+                const filename = sanitizeFilename(info.title)
+
                 // 检查 .mp4 文件是否被下载
                 const videoFilename = `${filename}.mp4`
                 const cmtFilename = `${filename}.cmt.xml`
@@ -248,7 +250,7 @@ const task = async () => {
                     const ls = $`you-get ${flags}`.pipe(process.stdout).verbose()
                     const [downloadError] = await to(ls)
                     if (downloadError) {
-                        logger.info(`下载文件 ${videoFilename} 失败`)
+                        logger.error(`下载文件 ${videoFilename} 失败`)
                         resource.downloadStatus = 'fail'
                     } else {
                         logger.info(`下载文件 ${videoFilename} 成功`)
@@ -264,10 +266,16 @@ const task = async () => {
                 // 下载完成后将该文件添加到上传队列中
                 uploadQueue.add(async () => {
                     const filepath = path.join(dataPath, videoFilename) // 上传视频文件
-                    if (await uniqUpload(filepath, uploadPath)) {
-                        resource.uploadStatus = 'success'
-                    } else {
+                    if (!await fs.pathExists(filepath)) {
+                        return
+                    }
+                    const [error] = await to(uniqUpload(filepath, uploadPath))
+                    if (error) {
+                        logger.error(`上传文件 ${videoFilename} 失败`)
                         resource.uploadStatus = 'fail'
+                    } else {
+                        logger.info(`上传文件 ${videoFilename} 成功`)
+                        resource.uploadStatus = 'success'
                     }
                     await resourceRepository.save(resource)
                     if (resource.uploadStatus === 'success' && autoRemove) {
@@ -275,38 +283,41 @@ const task = async () => {
                     }
 
                 })
-                if (resource.downloadStatus === 'success') {
-                    // 检查 .cmt.xml 文件是否被下载
-                    uploadQueue.add(async () => {
-                        const filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
-                        if (!await fs.pathExists(filepath)) {
-                            return
-                        }
-                        const size = (await fs.stat(filepath)).size
-                        const type = (await fileTypeFromFile(filepath)).mime
-                        let cmtResource: Partial<Resource> = resourceRepository.create({
-                            ...resource,
-                            id: undefined,
-                            name: cmtFilename,
-                            localPath: filepath,
-                            remotePath: `${uploadPath}/${cmtFilename}`,
-                            type,
-                            size,
-                            downloadStatus: 'success',
-                            uploadStatus: 'unknown',
-                        })
-                        cmtResource = await resourceRepository.save(cmtResource)
-                        if (await uniqUpload(filepath, uploadPath)) {
-                            cmtResource.uploadStatus = 'success'
-                        } else {
-                            cmtResource.uploadStatus = 'fail'
-                        }
-                        await resourceRepository.save(cmtResource)
-                        if (cmtResource.uploadStatus === 'success' && autoRemove) {
-                            await fs.remove(cmtResource.localPath) // 自动删除
-                        }
+                // if (resource.downloadStatus === 'success') {
+                // 检查 .cmt.xml 文件是否被下载
+                uploadQueue.add(async () => {
+                    const filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
+                    if (!await fs.pathExists(filepath)) {
+                        return
+                    }
+                    const size = (await fs.stat(filepath)).size
+                    const type = (await fileTypeFromFile(filepath)).mime
+                    let cmtResource: Partial<Resource> = resourceRepository.create({
+                        ...resource,
+                        id: undefined,
+                        name: cmtFilename,
+                        localPath: filepath,
+                        remotePath: `${uploadPath}/${cmtFilename}`,
+                        type,
+                        size,
+                        downloadStatus: 'success',
+                        uploadStatus: 'unknown',
                     })
-                }
+                    cmtResource = await resourceRepository.save(cmtResource)
+                    const [error] = await to(uniqUpload(filepath, uploadPath))
+                    if (error) {
+                        logger.error(`上传文件 ${cmtFilename} 失败`)
+                        cmtResource.uploadStatus = 'fail'
+                    } else {
+                        logger.info(`上传文件 ${cmtFilename} 成功`)
+                        cmtResource.uploadStatus = 'success'
+                    }
+                    await resourceRepository.save(cmtResource)
+                    if (cmtResource.uploadStatus === 'success' && autoRemove) {
+                        await fs.remove(cmtResource.localPath) // 自动删除
+                    }
+                })
+                // }
             }
 
         })
