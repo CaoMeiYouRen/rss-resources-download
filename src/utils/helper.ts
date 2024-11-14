@@ -1,4 +1,5 @@
 import path from 'path'
+import os from 'os'
 import fs from 'fs-extra'
 import { BaiduPCS } from './baidu'
 import { VideoInfo } from '@/types'
@@ -61,6 +62,59 @@ export function sanitizeFilename(filename: string): string {
     return filename.replace(illegalChars, '_').replace(emojiRegex, '_')
 }
 
+// 检测操作系统
+export function detectOS() {
+    const platform = os.platform()
+    if (platform === 'win32') {
+        return 'windows'
+    } if (platform === 'darwin') {
+        return 'mac'
+    } if (platform === 'linux') {
+        return 'linux'
+    }
+    return 'unknown'
+
+}
+
+// 将文件名转换为合法的文件名
+export function legitimize(text: string, platform = detectOS()) {
+    // POSIX systems
+    text = text.replace(/\0/g, '')
+        .replace(/\//g, '-')
+        .replace(/\|/g, '-')
+
+    if (platform === 'windows') {
+        // Windows (non-POSIX namespace)
+        text = text.replace(/:/g, '-')
+            .replace(/\*/g, '-')
+            .replace(/\?/g, '-')
+            .replace(/\\/g, '-')
+            .replace(/"/g, '\'')
+            .replace(/\+/g, '-')
+            .replace(/</g, '-')
+            .replace(/>/g, '-')
+            .replace(/\[/g, '(')
+            .replace(/\]/g, ')')
+            .replace(/\t/g, ' ')
+    } else {
+        // *nix
+        if (platform === 'mac') {
+            // Mac OS HFS+
+            text = text.replace(/:/g, '-')
+        }
+
+        // Remove leading .
+        if (text.startsWith('.')) {
+            text = text.slice(1)
+        }
+    }
+
+    // Trim to 80 characters long
+    text = text.substring(0, 80)
+
+    return text
+}
+
 /**
  *
  * 解析 you-get 的 json 输出信息
@@ -117,7 +171,7 @@ export async function uniqUpload(filepath: string, uploadPath: string) {
         if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了
             return true
         }
-        const output = await BaiduPCS.upload(filepath, uploadPath)
+        await BaiduPCS.upload(filepath, uploadPath)
         console.info(`上传文件 ${filename} 成功`)
         return false
     } catch (error) {

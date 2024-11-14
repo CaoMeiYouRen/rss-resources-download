@@ -13,7 +13,7 @@ import { CronJob } from 'cron'
 import { fileTypeFromFile } from 'file-type'
 import { getCloudCookie, cloudCookie2File } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
-import { getCookiePath, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
+import { getCookiePath, legitimize, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
 import { Config } from './types'
 import { timeFormat } from './utils/time'
 import { getDataSource } from './db'
@@ -211,11 +211,22 @@ const task = async () => {
             const infos = parseJsonArray(text) // 一个视频可能有多个分 P
             for await (const info of infos) {
                 const url = info.url
-                const filename = sanitizeFilename(info.title)
+                let videoTitle = info.title
+                // 如果是 B 站视频链接，则提取 id
+                // https://www.bilibili.com/video/av113475133317016?p=1
+                // https://www.bilibili.com/video/BV1Zmt6egEMP?p=1
+                if (url.startsWith('https://www.bilibili.com/video/')) {
+                    const id = url.match(/av(\d+)/i)?.[0] || url.match(/BV(\w+)/i)?.[0]
+                    if (id) {
+                        videoTitle += ` [${id}]`
+                    }
+                }
+
+                const filename = sanitizeFilename(videoTitle)
 
                 // 检查 .mp4 文件是否被下载
                 const videoFilename = `${filename}.mp4`
-                const cmtFilename = `${filename}.cmt.xml`
+
                 // 检查该 url 是否被下载过
                 let resource: Partial<Resource> = await resourceRepository.findOne({ where: { url, name: videoFilename } })
                 if (!resource) {
@@ -286,10 +297,21 @@ const task = async () => {
                 // if (resource.downloadStatus === 'success') {
                 // 检查 .cmt.xml 文件是否被下载
                 uploadQueue.add(async () => {
-                    const filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
+                    let cmtFilename = `${legitimize(info.title)}.cmt.xml`
+                    let filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
                     if (!await fs.pathExists(filepath)) {
                         return
                     }
+                    const newFilename = `${filename}.cmt.xml`
+                    cmtFilename = newFilename
+                    const newFilepath = path.join(dataPath, newFilename)
+                    // 跟 filename 相同
+                    await fs.rename(filepath, newFilepath)
+                    filepath = newFilepath
+                    if (!await fs.pathExists(filepath)) {
+                        return
+                    }
+
                     const size = (await fs.stat(filepath)).size
                     const type = (await fileTypeFromFile(filepath)).mime
                     let cmtResource: Partial<Resource> = resourceRepository.create({
