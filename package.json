@@ -31,7 +31,9 @@
     "start:tsx": "tsx src/index.ts",
     "release": "semantic-release",
     "commit": "cz",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "start:pm2": "pm2 start ./pm2.json",
+    "stop:pm2": "pm2 stop ./pm2.json"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.6.1",

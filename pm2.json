@@ -1,0 +1,10 @@
+{
+    "apps": [
+        {
+            "name": "rss-resources-download",
+            "script": "./dist/index.mjs",
+            "max_memory_restart": "512M",
+            "restart_delay": 60000
+        }
+    ]
+}

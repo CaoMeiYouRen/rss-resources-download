@@ -113,13 +113,19 @@ for await (const file of files) {
     if (file.endsWith('.download')) { // 过滤未下载完成的文件
         continue
     }
+    if (file.startsWith('.')) { // 过滤隐藏文件
+        continue
+    }
     if (!await resourceRepository.findOne({ where: { name: file } })) { // 如果没在数据库，则写入记录
         const filepath = path.normalize(path.join(dataPath, file))
         if (!await fs.pathExists(filepath)) { // 如果有表情字符会解析失败
             continue
         }
-        const size = (await fs.stat(filepath)).size
-        const type = (await fileTypeFromFile(filepath)).mime
+        const size = (await fs.stat(filepath))?.size
+        const type = (await fileTypeFromFile(filepath))?.mime
+        if (!size || !type) { // 过滤没有文件类型和文件大小的文件
+            continue
+        }
         const newResource: Partial<Resource> = {
             url: '',
             name: file,
