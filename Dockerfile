@@ -43,7 +43,7 @@ RUN apk update \
  && pip3 install --no-cache-dir --upgrade --break-system-packages you-get \
  && wget "https://github.com/qjfoidnh/BaiduPCS-Go/releases/download/v3.9.5/BaiduPCS-Go-v3.9.5-linux-amd64.zip" \
  && unzip "BaiduPCS-Go-v3.9.5-linux-amd64.zip"  \
- && ln -s "/home/app/BaiduPCS-Go-v3.9.5-linux-amd64/BaiduPCS-Go" "/usr/bin/BaiduPCS-Go" \
+ && mv "BaiduPCS-Go-v3.9.5-linux-amd64/BaiduPCS-Go" "/usr/bin/BaiduPCS-Go" \
  && BaiduPCS-Go -v
 
 COPY --from=docker-minifier /app /app
