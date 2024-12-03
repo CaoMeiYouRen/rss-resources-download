@@ -49,7 +49,7 @@ if (!await fs.pathExists(configPath)) {
 
 logger.info(`当前配置文件路径为：${configPath}`)
 
-const [error1, configFile] = await to(fs.readFile('config.yml', 'utf8'))
+const [error1, configFile] = await to(fs.readFile(configPath, 'utf8'))
 if (error1) {
     logger.error('未检测到 config.yml 配置文件，请配置后重试！\n', error1.stack)
     process.exit(1)
