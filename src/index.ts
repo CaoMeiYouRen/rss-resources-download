@@ -13,7 +13,7 @@ import { CronJob } from 'cron'
 import { fileTypeFromFile } from 'file-type'
 import { getCloudCookie, cloudCookie2File } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
-import { getCookiePath, legitimize, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
+import { getCookiePath, getFileMimeType, legitimize, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
 import { Config } from './types'
 import { timeFormat } from './utils/time'
 import { getDataSource } from './db'
@@ -135,7 +135,7 @@ for await (const file of files) {
             continue
         }
         const size = (await fs.stat(filepath))?.size
-        const type = (await fileTypeFromFile(filepath))?.mime
+        const type = await getFileMimeType(filepath)
         if (!size || !type) { // 过滤没有文件类型和文件大小的文件
             continue
         }
@@ -287,7 +287,7 @@ const task = async () => {
                         resource.downloadStatus = 'success'
                         const filepath = path.join(dataPath, videoFilename)
                         const size = (await fs.stat(filepath)).size
-                        const type = (await fileTypeFromFile(filepath)).mime
+                        const type = await getFileMimeType(filepath)
                         resource.size = size
                         resource.type = type
                     }
@@ -332,7 +332,7 @@ const task = async () => {
                     }
 
                     const size = (await fs.stat(filepath)).size
-                    const type = (await fileTypeFromFile(filepath)).mime
+                    const type = await getFileMimeType(filepath)
                     let cmtResource: Partial<Resource> = resourceRepository.create({
                         ...resource,
                         id: undefined,
