@@ -36,6 +36,19 @@ if (os.platform() === 'win32') { // 如果是 Windows 系统，则切换到 Powe
 
 const rssParser = new RssParser()
 
+let configPath = path.resolve(process.cwd(), './config.yml')// 尝试读取 config.yml 配置文件
+
+if (!await fs.pathExists(configPath)) {
+    configPath = path.resolve(process.cwd(), './config/config.yml') // 尝试读取 config/config.yml 配置文件
+}
+
+if (!await fs.pathExists(configPath)) {
+    logger.error('未检测到 config.yml 配置文件，请配置后重试！')
+    process.exit(1)
+}
+
+logger.info(`当前配置文件路径为：${configPath}`)
+
 const [error1, configFile] = await to(fs.readFile('config.yml', 'utf8'))
 if (error1) {
     logger.error('未检测到 config.yml 配置文件，请配置后重试！\n', error1.stack)

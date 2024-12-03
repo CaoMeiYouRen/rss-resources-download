@@ -17,3 +17,4 @@ services:
       - ./data:/app/data
       - ./datebase:/app/datebase
       - ./cookies:/app/cookies
+      - ./config:/app/config
