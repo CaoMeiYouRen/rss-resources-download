@@ -1,6 +1,9 @@
 import path from 'path'
 import os from 'os'
 import fs from 'fs-extra'
+import { fileTypeFromFile } from 'file-type'
+import mime from 'mime-types'
+import { to } from 'await-to-js'
 import { BaiduPCS } from './baidu'
 import { VideoInfo } from '@/types'
 /**
@@ -178,4 +181,15 @@ export async function uniqUpload(filepath: string, uploadPath: string) {
         console.error(error)
         return false
     }
+}
+
+export async function getFileMimeType(filePath: string) {
+    // const [fileTypeError, fileType] = await to(fileTypeFromFile(filePath))
+    // if (fileTypeError) {
+    //     console.error('Error determining file type:', fileTypeError)
+    // }
+    // if (fileType?.mime) {
+    //     return fileType.mime
+    // }
+    return mime.lookup(path.extname(filePath)) || 'application/octet-stream'
 }
