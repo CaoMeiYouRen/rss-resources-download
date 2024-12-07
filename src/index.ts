@@ -11,6 +11,7 @@ import { configDotenv } from 'dotenv'
 import PQueue from 'p-queue'
 import { CronJob } from 'cron'
 import { fileTypeFromFile } from 'file-type'
+import { runPushAllInOne } from 'push-all-in-one'
 import { getCloudCookie, cloudCookie2File } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
 import { getCookiePath, getFileMimeType, legitimize, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
@@ -72,6 +73,7 @@ const {
     uploadPath,
     cronTime = '',
     autoRemove = false,
+    pushConfigs = [],
 } = CONFIG
 
 const rssQueue = new PQueue({ concurrency: rssLimit || 1 })
@@ -306,6 +308,18 @@ const task = async () => {
                     } else {
                         logger.info(`上传文件 ${videoFilename} 成功`)
                         resource.uploadStatus = 'success'
+
+                        if (pushConfigs?.length) {
+                            await Promise.all(pushConfigs.map(async (pushConfig) => {
+                                const { type, config, option } = pushConfig
+                                const pushTitle = `上传文件 ${videoFilename} 成功`
+                                const desp = `下载文件 ${videoFilename} 成功\n上传文件 ${videoFilename} 成功\n资源路径：${url}`
+                                const [pushError] = await to(runPushAllInOne(pushTitle, desp, { type: type as any, config, option }))
+                                if (pushError) {
+                                    logger.error('推送失败', pushError.stack)
+                                }
+                            }))
+                        }
                     }
                     await resourceRepository.save(resource)
                     if (resource.uploadStatus === 'success' && autoRemove) {

@@ -107,6 +107,7 @@
     "mime-types": "^2.1.35",
     "p-limit": "^6.1.0",
     "p-queue": "^8.0.1",
+    "push-all-in-one": "^4.1.1",
     "reflect-metadata": "^0.2.2",
     "rss-parser": "^3.13.0",
     "sqlite3": "^5.1.7",

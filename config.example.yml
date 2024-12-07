@@ -25,3 +25,5 @@ cronTime: ""
 
 # 自动删除已经上传的文件
 autoRemove: false
+# push-all-in-one 推送配置，参考 https://github.com/CaoMeiYouRen/push-all-in-one
+pushConfigs: []

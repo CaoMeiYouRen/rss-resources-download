@@ -9,7 +9,8 @@ export interface Config {
     uploadLimit?: number
     downloadLimit?: number
     cronTime?: string
-    autoRemove: boolean
+    autoRemove?: boolean
+    pushConfigs?: PushConfig[]
 }
 
 interface Stream {
@@ -34,4 +35,10 @@ export interface VideoInfo {
     site: string
     streams: Streams
     extra: Extra
+}
+
+export interface PushConfig {
+    type: string
+    config: any
+    option: any
 }
