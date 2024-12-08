@@ -311,7 +311,7 @@ const task = async () => {
 
                         if (pushConfigs?.length) {
                             await Promise.all(pushConfigs.map(async (pushConfig) => {
-                                const { type, config, option } = pushConfig
+                                const { type, config = {}, option = {} } = pushConfig
                                 const pushTitle = `上传文件 ${videoFilename} 成功`
                                 const desp = `下载文件 ${videoFilename} 成功\n上传文件 ${videoFilename} 成功\n资源路径：${url}`
                                 const [pushError] = await to(runPushAllInOne(pushTitle, desp, { type: type as any, config, option }))
