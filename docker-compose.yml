@@ -4,7 +4,7 @@ services:
   server:
     container_name: 'rss-resources-download'
     image: ${DOCKER_IMAGE:-caomeiyouren/rss-resources-download}
-    restart: unless-stopped
+    restart: always
     # ports:
     #   - "3000:3000"
     environment:
