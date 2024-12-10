@@ -239,10 +239,10 @@ const task = async () => {
                 if (url.startsWith('https://www.bilibili.com/video/')) {
                     const id = url.match(/av(\d+)/i)?.[0] || url.match(/BV(\w+)/i)?.[0]
                     if (id) {
-                        videoTitle += ` [${id}]`
+                        videoTitle += `_[${id}]`
                     }
                 }
-
+                videoTitle = videoTitle.replaceAll(' ', '_')
                 const filename = sanitizeFilename(videoTitle)
 
                 // 检查 .mp4 文件是否被下载
