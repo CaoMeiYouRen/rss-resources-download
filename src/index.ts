@@ -12,6 +12,7 @@ import PQueue from 'p-queue'
 import { CronJob } from 'cron'
 import { fileTypeFromFile } from 'file-type'
 import { runPushAllInOne } from 'push-all-in-one'
+import { format as bytesFormat } from 'better-bytes'
 import { getCloudCookie, cloudCookie2File } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
 import { getCookiePath, getFileMimeType, legitimize, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
@@ -315,7 +316,7 @@ const task = async () => {
                                 const config = pushConfig.config || {}
                                 const option = pushConfig.option || {}
                                 const pushTitle = '上传文件成功通知'
-                                const desp = `下载文件 "${videoFilename}" 成功\n上传文件 "${videoFilename}" 成功\n资源路径：${url}`
+                                const desp = `下载文件 "${videoFilename}" 成功\n上传文件 "${videoFilename}" 成功\n文件大小：${bytesFormat(resource.size)}\n资源路径：${url}`
                                 const [pushError] = await to(runPushAllInOne(pushTitle, desp, { type: type as any, config, option }))
                                 if (pushError) {
                                     logger.error('推送失败', pushError.stack)

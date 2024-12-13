@@ -14,6 +14,9 @@ importers:
       await-to-js:
         specifier: ^3.0.0
         version: 3.0.0
+      better-bytes:
+        specifier: ^1.2.4
+        version: 1.2.4
       cron:
         specifier: ^3.1.7
         version: 3.1.7
@@ -1130,6 +1133,10 @@ packages:
 
   before-after-hook@3.0.2:
     resolution: {integrity: sha512-Nik3Sc0ncrMK4UUdXQmAnRtzmNQTAAXmXIopizwZ1W1t8QmfJj+zL4OA2I7XPTPW5z5TDqv4hRo/JzouDJnX3A==}
+
+  better-bytes@1.2.4:
+    resolution: {integrity: sha512-lA8ZltmVDd7ThuUtZgZxKMsb2I7qLZYHsaT+CkuMZeHLIXxiCxqgqokNNG+1WKTccs+ybFjeAW6+pc3gnKdoRg==}
+    engines: {node: '>=16'}
 
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
@@ -5374,6 +5381,10 @@ snapshots:
   base64-js@1.5.1: {}
 
   before-after-hook@3.0.2: {}
+
+  better-bytes@1.2.4:
+    dependencies:
+      tslib: 2.6.3
 
   binary-extensions@2.3.0: {}
 

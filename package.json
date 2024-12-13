@@ -96,6 +96,7 @@
   },
   "dependencies": {
     "await-to-js": "^3.0.0",
+    "better-bytes": "^1.2.4",
     "cron": "^3.1.7",
     "dayjs": "^1.11.12",
     "dotenv": "^16.4.5",
