@@ -316,7 +316,7 @@ const task = async () => {
                                 const config = pushConfig.config || {}
                                 const option = pushConfig.option || {}
                                 const pushTitle = '上传文件成功通知'
-                                const desp = `下载文件 "${videoFilename}" 成功\n上传文件 "${videoFilename}" 成功\n文件大小：${bytesFormat(resource.size)}\n资源路径：${url}`
+                                const desp = `上传文件 "${videoFilename}" 成功\n文件大小：${bytesFormat(resource.size)}\n资源路径：${url}`
                                 const [pushError] = await to(runPushAllInOne(pushTitle, desp, { type: type as any, config, option }))
                                 if (pushError) {
                                     logger.error('推送失败', pushError.stack)
