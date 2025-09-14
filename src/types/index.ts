@@ -4,6 +4,7 @@ export interface Config {
     cookieCloudUrl?: string
     cookieCloudPassword?: string
     bduss: string
+    stoken: string
     uploadPath: string
     rssLimit?: number
     uploadLimit?: number

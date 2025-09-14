@@ -17,6 +17,8 @@ cookieCloudUrl: "https://cookiecloud.example.com/get/ABCDEF"
 cookieCloudPassword: ""
 # 百度网盘 bduss
 bduss: ""
+# 百度网盘 stoken
+stoken: ""
 # 上传到的路径
 uploadPath: "/videos"
 

@@ -71,6 +71,7 @@ const {
     cookieCloudUrl,
     cookieCloudPassword,
     bduss,
+    stoken,
     uploadPath,
     cronTime = '',
     autoRemove = false,
@@ -101,7 +102,7 @@ if (errorBaidu) {
 
 // 检查 BaiduPCS-Go 是否已登录
 if ((await BaiduPCS.who()).text()?.includes('uid: 0')) { // 未登录
-    logger.info((await BaiduPCS.loginByBduss(bduss)).stdout)
+    logger.info((await BaiduPCS.loginByBduss(bduss, stoken)).stdout)
 }
 
 const dataPath = path.resolve(_dataPath) // 解析为绝对路径

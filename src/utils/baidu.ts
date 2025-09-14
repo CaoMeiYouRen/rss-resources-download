@@ -6,10 +6,12 @@ import { $ } from 'zx'
  * @author CaoMeiYouRen
  * @date 2022-09-18
  * @param bduss
+ * @param stoken
  */
-async function loginByBduss(bduss: string) {
+async function loginByBduss(bduss: string, stoken: string) {
     const flags = [
         `-bduss=${bduss}`,
+        `-stoken=${stoken}`,
     ]
     return $`BaiduPCS-Go login ${flags}`.pipe(process.stdout)
 }
