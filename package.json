@@ -120,7 +120,12 @@
   "pnpm": {
     "overrides": {
       "compare-func": "^2.0.0"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "esbuild",
+      "sqlite3"
+    ]
   },
   "type": "module"
 }
