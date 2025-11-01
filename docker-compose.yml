@@ -2,7 +2,7 @@ version: "3"
 
 services:
   server:
-    container_name: 'rss-resources-download'
+    container_name: "rss-resources-download"
     image: ${DOCKER_IMAGE:-caomeiyouren/rss-resources-download}
     restart: unless-stopped
     # ports:
@@ -11,10 +11,10 @@ services:
       NODE_ENV: production
       # PORT: 3000
       TZ: "Asia/Shanghai"
-      LOGFILES: 'true'
+      LOGFILES: "true"
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
-      - ./datebase:/app/datebase
+      - ./database:/app/database
       - ./cookies:/app/cookies
       - ./config:/app/config
