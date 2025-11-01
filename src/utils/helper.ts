@@ -163,24 +163,25 @@ export function parseJsonArray(input: string): VideoInfo[] {
  * @param uploadPath 远程文件夹路径
  */
 export async function uniqUpload(filepath: string, uploadPath: string) {
-    try {
-        if (!await fs.pathExists(filepath)) {
-            return false
-        }
-        const filename = path.basename(filepath)
-        const keyword = filename.slice(0, 20) // 搜索关键词不大于 22 个字符，否则报 31023
-        // 上传之前先检查是否已经存在同名文件了，匹配 文件名
-        const text = (await BaiduPCS.search(keyword, uploadPath)).text()
-        if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了
-            return true
-        }
-        await BaiduPCS.upload(filepath, uploadPath)
-        console.info(`上传文件 ${filename} 成功`)
-        return false
-    } catch (error) {
-        console.error(error)
+
+    if (!await fs.pathExists(filepath)) {
         return false
     }
+    const filename = path.basename(filepath)
+    const keyword = filename.slice(0, 20) // 搜索关键词不大于 22 个字符，否则报 31023
+    // 上传之前先检查是否已经存在同名文件了，匹配 文件名
+    const text = (await BaiduPCS.search(keyword, uploadPath)).text()
+    if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了
+        return true
+    }
+    const uploadInfo = (await BaiduPCS.upload(filepath, uploadPath)).text()
+     if (/上传失败|错误/.test(uploadInfo)) {
+        console.error('上传文件失败！')
+        throw new Error(`上传文件失败！\n${uploadInfo.slice(0, 3000)}`)
+    }
+    console.info(`上传文件 ${filename} 成功`)
+    return false
+
 }
 
 export async function getFileMimeType(filePath: string) {
