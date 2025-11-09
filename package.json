@@ -100,7 +100,7 @@
     "cron": "^3.1.7",
     "dayjs": "^1.11.12",
     "dotenv": "^16.4.5",
-    "file-type": "^19.4.1",
+    "file-type": "^21.0.0",
     "fs-extra": "^11.2.0",
     "isomorphic-unfetch": "^4.0.2",
     "lodash-es": "^4.17.21",
