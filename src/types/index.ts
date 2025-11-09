@@ -9,6 +9,7 @@ export interface Config {
     rssLimit?: number
     uploadLimit?: number
     downloadLimit?: number
+    uploadRetry?: number
     cronTime?: string
     autoRemove?: boolean
     pushConfigs?: PushConfig[]

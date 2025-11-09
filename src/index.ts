@@ -68,6 +68,7 @@ const {
     uploadLimit = 1,
     downloadLimit = 1,
     rssLimit = 1,
+    uploadRetry = 3,
     cookieCloudUrl,
     cookieCloudPassword,
     bduss,
@@ -122,6 +123,51 @@ const dataSource = await getDataSource(path.join(databaseDir, 'database.db'))
 const articleRepository = dataSource.getRepository(Article)
 const resourceRepository = dataSource.getRepository(Resource)
 
+const normalizedUploadRetry = Number.isFinite(uploadRetry) ? Math.max(Math.floor(uploadRetry), 1) : 3
+
+const enqueueUploadTask = (
+    resource: Resource,
+    filepath: string,
+    onSuccess?: (alreadyExists: boolean) => Promise<void> | void,
+) => {
+    const task = async (): Promise<void> => {
+        const displayName = resource.name ?? path.basename(filepath)
+        if (!filepath) {
+            return
+        }
+        if (!await fs.pathExists(filepath)) {
+            logger.warn(`文件 ${filepath} 不存在，跳过上传任务`)
+            return
+        }
+        const [uploadError, alreadyExists] = await to(uniqUpload(filepath, uploadPath, normalizedUploadRetry))
+        if (uploadError) {
+            resource.uploadStatus = 'fail'
+            await resourceRepository.save(resource)
+            logger.error(`上传文件 ${displayName} 失败`, uploadError.stack || uploadError)
+            // logger.error(`上传文件 ${displayName} 失败，将重新加入上传队列`, uploadError.stack || uploadError)
+            // if (await fs.pathExists(filepath)) {
+            //     uploadQueue.add(task)
+            // }
+            return
+        }
+        resource.uploadStatus = 'success'
+        resource.localPath = filepath
+        await resourceRepository.save(resource)
+        logger.info(`上传文件 ${displayName} ${alreadyExists ? '已存在，跳过重复上传' : '成功'}`)
+        if (onSuccess) {
+            await onSuccess(Boolean(alreadyExists))
+        }
+        if (autoRemove) {
+            try {
+                await fs.remove(filepath)
+            } catch (removeError) {
+                logger.warn(`删除本地文件 ${filepath} 失败`, removeError instanceof Error ? removeError.message : removeError)
+            }
+        }
+    }
+    uploadQueue.add(task)
+}
+
 // 检查本地文件是否已上传
 // 同步本地文件到数据库
 const files = await fs.readdir(dataPath)
@@ -160,17 +206,12 @@ for await (const file of files) {
 // 查询 文件上传状态 为 unknown 的
 const localResources = await resourceRepository.find({ where: { uploadStatus: 'unknown' } })
 
-uploadQueue.addAll(localResources.map((r) => async () => {
-    if (await uniqUpload(r.localPath, uploadPath)) {
-        r.uploadStatus = 'success'
-    } else {
-        r.uploadStatus = 'fail'
+localResources.forEach((resource) => {
+    if (!resource.localPath) {
+        return
     }
-    await resourceRepository.save(r)
-    if (r.uploadStatus === 'success' && autoRemove) {
-        await fs.remove(r.localPath) // 自动删除
-    }
-}))
+    enqueueUploadTask(resource, resource.localPath)
+})
 
 const task = async () => {
 
@@ -251,20 +292,22 @@ const task = async () => {
                 const videoFilename = `${filename}.mp4`
 
                 // 检查该 url 是否被下载过
-                let resource: Partial<Resource> = await resourceRepository.findOne({ where: { url, name: videoFilename } })
+                let resource = await resourceRepository.findOne({ where: { url, name: videoFilename } })
+                const videoFilepath = path.join(dataPath, videoFilename)
                 if (!resource) {
-                    resource = {
+                    resource = resourceRepository.create({
                         url,
                         name: videoFilename,
-                        localPath: path.join(dataPath, videoFilename),
+                        localPath: videoFilepath,
                         remotePath: `${uploadPath}/${videoFilename}`,
                         type: '',
                         size: 0,
                         downloadStatus: 'unknown',
                         uploadStatus: 'unknown',
-                    }
-                    resource = await resourceRepository.save(resource)
+                    })
                 }
+                resource.localPath = videoFilepath
+                resource = await resourceRepository.save(resource)
                 if (resource.uploadStatus === 'success') { // 如果已下载并上传了，则跳过
                     return
                 }
@@ -298,38 +341,20 @@ const task = async () => {
                     resource = await resourceRepository.save(resource)
                 }
                 // 下载完成后将该文件添加到上传队列中
-                uploadQueue.add(async () => {
-                    const filepath = path.join(dataPath, videoFilename) // 上传视频文件
-                    if (!await fs.pathExists(filepath)) {
-                        return
+                enqueueUploadTask(resource, videoFilepath, async () => {
+                    if (pushConfigs?.length) {
+                        await Promise.all(pushConfigs.map(async (pushConfig) => {
+                            const { type } = pushConfig
+                            const config = pushConfig.config || {}
+                            const option = pushConfig.option || {}
+                            const pushTitle = '上传文件成功通知'
+                            const desp = `上传文件 "${videoFilename}" 成功\n文件大小：${bytesFormat(resource.size)}\n资源路径：${url}`
+                            const [pushError] = await to(runPushAllInOne(pushTitle, desp, { type: type as any, config, option }))
+                            if (pushError) {
+                                logger.error('推送失败', pushError.stack)
+                            }
+                        }))
                     }
-                    const [error] = await to(uniqUpload(filepath, uploadPath))
-                    if (error) {
-                        logger.error(`上传文件 ${videoFilename} 失败`)
-                        resource.uploadStatus = 'fail'
-                    } else {
-                        logger.info(`上传文件 ${videoFilename} 成功`)
-                        resource.uploadStatus = 'success'
-
-                        if (pushConfigs?.length) {
-                            await Promise.all(pushConfigs.map(async (pushConfig) => {
-                                const { type } = pushConfig
-                                const config = pushConfig.config || {}
-                                const option = pushConfig.option || {}
-                                const pushTitle = '上传文件成功通知'
-                                const desp = `上传文件 "${videoFilename}" 成功\n文件大小：${bytesFormat(resource.size)}\n资源路径：${url}`
-                                const [pushError] = await to(runPushAllInOne(pushTitle, desp, { type: type as any, config, option }))
-                                if (pushError) {
-                                    logger.error('推送失败', pushError.stack)
-                                }
-                            }))
-                        }
-                    }
-                    await resourceRepository.save(resource)
-                    if (resource.uploadStatus === 'success' && autoRemove) {
-                        await fs.remove(resource.localPath) // 自动删除
-                    }
-
                 })
                 // if (resource.downloadStatus === 'success') {
                 // 检查 .cmt.xml 文件是否被下载
@@ -351,7 +376,7 @@ const task = async () => {
 
                     const size = (await fs.stat(filepath)).size
                     const type = await getFileMimeType(filepath)
-                    let cmtResource: Partial<Resource> = resourceRepository.create({
+                    let cmtResource = resourceRepository.create({
                         ...resource,
                         id: undefined,
                         name: cmtFilename,
@@ -363,18 +388,7 @@ const task = async () => {
                         uploadStatus: 'unknown',
                     })
                     cmtResource = await resourceRepository.save(cmtResource)
-                    const [error] = await to(uniqUpload(filepath, uploadPath))
-                    if (error) {
-                        logger.error(`上传文件 ${cmtFilename} 失败`)
-                        cmtResource.uploadStatus = 'fail'
-                    } else {
-                        logger.info(`上传文件 ${cmtFilename} 成功`)
-                        cmtResource.uploadStatus = 'success'
-                    }
-                    await resourceRepository.save(cmtResource)
-                    if (cmtResource.uploadStatus === 'success' && autoRemove) {
-                        await fs.remove(cmtResource.localPath) // 自动删除
-                    }
+                    enqueueUploadTask(cmtResource, filepath)
                 })
                 // }
             }

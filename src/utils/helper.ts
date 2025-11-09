@@ -162,7 +162,7 @@ export function parseJsonArray(input: string): VideoInfo[] {
  * @param filepath 本地文件路径
  * @param uploadPath 远程文件夹路径
  */
-export async function uniqUpload(filepath: string, uploadPath: string) {
+export async function uniqUpload(filepath: string, uploadPath: string, maxRetry = 3) {
 
     if (!await fs.pathExists(filepath)) {
         return false
@@ -174,12 +174,32 @@ export async function uniqUpload(filepath: string, uploadPath: string) {
     if (text?.includes(filename)) { // 如果匹配到 文件名，说明已经存在了
         return true
     }
-    const uploadInfo = (await BaiduPCS.upload(filepath, uploadPath)).text()
-     if (/上传失败|错误/.test(uploadInfo)) {
-        console.error('上传文件失败！')
-        throw new Error(`上传文件失败！\n${uploadInfo.slice(0, 3000)}`)
+    let attempt = 0
+    let lastError: Error | undefined
+    const normalizedRetry = Number.isFinite(maxRetry) ? Math.max(Math.floor(maxRetry), 1) : 3
+    while (attempt < normalizedRetry) {
+        attempt += 1
+        try {
+            const uploadInfo = (await BaiduPCS.upload(filepath, uploadPath)).text()
+            if (/上传失败|错误/.test(uploadInfo)) {
+                throw new Error(`上传文件失败！\n${uploadInfo.slice(0, 3000)}`)
+            }
+            console.info(`上传文件 ${filename} 成功（第 ${attempt} 次尝试）`)
+            return false
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error))
+            lastError = err
+            if (attempt < normalizedRetry) {
+                console.warn(`上传文件 ${filename} 失败，即将进行第 ${attempt + 1} 次重试。`, err.message)
+                continue
+            }
+            console.error(`上传文件 ${filename} 失败，已重试 ${attempt} 次。`, err.message)
+            throw err
+        }
     }
-    console.info(`上传文件 ${filename} 成功`)
+    if (lastError) {
+        throw lastError
+    }
     return false
 
 }
