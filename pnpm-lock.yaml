@@ -18,8 +18,8 @@ importers:
         specifier: ^1.2.4
         version: 1.2.4
       cron:
-        specifier: ^3.1.7
-        version: 3.1.7
+        specifier: ^4.3.4
+        version: 4.3.4
       dayjs:
         specifier: ^1.11.12
         version: 1.11.12
@@ -1040,8 +1040,8 @@ packages:
   '@types/lodash@4.17.7':
     resolution: {integrity: sha512-8wTvZawATi/lsmNu10/j2hk1KEP0IvjubqPE3cu1Xz7xfXXt5oCq3SNUz4fMIP4XGF9Ky+Ue2tBA3hcS7LSBlA==}
 
-  '@types/luxon@3.4.2':
-    resolution: {integrity: sha512-TifLZlFudklWlMBfhubvgqTXRzLDI5pCbGa4P8a3wPyUQSW+1xQ5eDsreP9DWHX3tjq1ke96uYG/nwundroWcA==}
+  '@types/luxon@3.7.1':
+    resolution: {integrity: sha512-H3iskjFIAn5SlJU7OuxUmTEpebK6TKB8rxZShDslBMZJ5u9S//KM1sbdAisiSrqwLQncVjnpi2OK2J51h+4lsg==}
 
   '@types/mdast@3.0.15':
     resolution: {integrity: sha512-LnwD+mUEfxWMa1QpDraczIn6k0Ee3SMicuYSSzS6ZYl2gKS09EClnJYGd8Du6rfc5r/GZEk5o1mRb8TaTj03sQ==}
@@ -1669,8 +1669,9 @@ packages:
       typescript:
         optional: true
 
-  cron@3.1.7:
-    resolution: {integrity: sha512-tlBg7ARsAMQLzgwqVxy8AZl/qlTc5nibqYwtNGoCrd+cV+ugI+tvZC1oT/8dFH8W455YrywGykx/KMmAqOr7Jw==}
+  cron@4.3.4:
+    resolution: {integrity: sha512-OiO0l73MGhQOZQCjYZ0v7r8yFWpBOWteemwR1RIxiHtfVsIOwiTJZDvg7GmKzggkwC0RO8tI3P1QYBUCIZNYRQ==}
+    engines: {node: '>=18.x'}
 
   cross-env@10.1.0:
     resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
@@ -2927,8 +2928,8 @@ packages:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
 
-  luxon@3.4.4:
-    resolution: {integrity: sha512-zobTr7akeGHnv7eBOXcRgMeCP6+uyYsczwmeRCauvpvaAltgNyTbLH/+VaEAPUeWBT+1GuNmz4wC/6jtQzbbVA==}
+  luxon@3.7.2:
+    resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
     engines: {node: '>=12'}
 
   magic-string@0.30.21:
@@ -5453,7 +5454,7 @@ snapshots:
 
   '@types/lodash@4.17.7': {}
 
-  '@types/luxon@3.4.2': {}
+  '@types/luxon@3.7.1': {}
 
   '@types/mdast@3.0.15':
     dependencies:
@@ -6170,10 +6171,10 @@ snapshots:
     optionalDependencies:
       typescript: 5.5.4
 
-  cron@3.1.7:
+  cron@4.3.4:
     dependencies:
-      '@types/luxon': 3.4.2
-      luxon: 3.4.4
+      '@types/luxon': 3.7.1
+      luxon: 3.7.2
 
   cross-env@10.1.0:
     dependencies:
@@ -7585,7 +7586,7 @@ snapshots:
     dependencies:
       yallist: 4.0.0
 
-  luxon@3.4.4: {}
+  luxon@3.7.2: {}
 
   magic-string@0.30.21:
     dependencies:
