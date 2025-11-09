@@ -24,8 +24,8 @@ importers:
         specifier: ^1.11.12
         version: 1.11.12
       dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
+        specifier: ^17.2.3
+        version: 17.2.3
       file-type:
         specifier: ^21.0.0
         version: 21.0.0
@@ -1825,8 +1825,12 @@ packages:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
 
-  dotenv@16.4.5:
-    resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
+
+  dotenv@17.2.3:
+    resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
     engines: {node: '>=12'}
 
   duplexer2@0.1.4:
@@ -6306,7 +6310,9 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv@16.4.5: {}
+  dotenv@16.6.1: {}
+
+  dotenv@17.2.3: {}
 
   duplexer2@0.1.4:
     dependencies:
@@ -9278,7 +9284,7 @@ snapshots:
       cli-highlight: 2.1.11
       dayjs: 1.11.12
       debug: 4.3.6
-      dotenv: 16.4.5
+      dotenv: 16.6.1
       glob: 10.3.12
       mkdirp: 2.1.6
       reflect-metadata: 0.2.2
