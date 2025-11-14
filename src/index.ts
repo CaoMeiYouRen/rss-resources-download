@@ -26,6 +26,8 @@ configDotenv({
     path: ['.env.local', '.env'],
 })
 
+$.verbose = true // 启用 verbose 模式
+
 const logger = log4js.getLogger('rss-resources-download')
 
 logger.level = process.env.LOGGER_LEVEL || 'debug'
@@ -88,14 +90,14 @@ const downloadQueue = new PQueue({ concurrency: downloadLimit || 1 })
 const uploadQueue = new PQueue({ concurrency: uploadLimit || 1 })
 
 // 检查 you-get 是否已安装
-const [error2] = await to($`you-get -V`.pipe(process.stdout))
+const [error2] = await to($`you-get -V`)
 if (error2) {
     logger.error('未检测到 you-get ，请安装后重试！\n', error2.stack)
     process.exit(1)
 }
 
 // 检查 BaiduPCS-Go 是否已安装
-const [errorBaidu] = await to($`BaiduPCS-Go -v`.pipe(process.stdout))
+const [errorBaidu] = await to($`BaiduPCS-Go -v`)
 if (errorBaidu) {
     logger.error('未检测到 BaiduPCS-Go ，请安装后重试！\n', errorBaidu.stack)
     process.exit(1)
@@ -324,7 +326,7 @@ const task = async () => {
                     ].filter(Boolean)
                     const cmd = `you-get ${flags.join(' ')}`
                     logger.info(cmd)
-                    const ls = $`you-get ${flags}`.pipe(process.stdout).verbose()
+                    const ls = $`you-get ${flags}`
                     const [downloadError] = await to(ls)
                     if (downloadError) {
                         logger.error(`下载文件 ${videoFilename} 失败`)

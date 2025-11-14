@@ -44,7 +44,7 @@ WORKDIR /app
 RUN apk update \
  && apk add --no-cache --update ffmpeg python3 py3-pip bash \
  && python3 --version \
- && pip3 install --no-cache-dir --upgrade --break-system-packages you-get \
+ && pip3 install --no-cache-dir --upgrade --break-system-packages you-get yutto\
  && wget "https://github.com/qjfoidnh/BaiduPCS-Go/releases/download/v3.9.9/BaiduPCS-Go-v3.9.9-linux-amd64.zip" \
  && unzip "BaiduPCS-Go-v3.9.9-linux-amd64.zip"  \
  && mv "BaiduPCS-Go-v3.9.9-linux-amd64/BaiduPCS-Go" "/usr/bin/BaiduPCS-Go" \
