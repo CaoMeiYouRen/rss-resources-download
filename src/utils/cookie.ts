@@ -1,4 +1,5 @@
 import fs from 'fs-extra'
+import { generateYuttoConfig } from './yutto'
 
 export interface CookieCloudResponse {
     cookie_data: Record<string, Cookie[]>
@@ -71,3 +72,28 @@ export async function cloudCookie2File(data: CookieCloudResponse) {
     }
 }
 
+export async function getSessdataFromCloudCookie(data: CookieCloudResponse): Promise<string | null> {
+    try {
+        const cookies = data.cookie_data['bilibili.com']
+        const sessdata = cookies.find((cookie) => cookie.name.toUpperCase() === 'SESSDATA')
+        if (sessdata) {
+            return sessdata.value
+        }
+        return null
+    } catch (error) {
+        console.error('Unexpected error:', error)
+        return null
+    }
+}
+
+export async function cloudCookie2YuttoConfig(data: CookieCloudResponse) {
+    try {
+        const sessdata = await getSessdataFromCloudCookie(data)
+        const yuttoConfigContent = generateYuttoConfig({
+            sessdata,
+        })
+        await fs.writeFile('yutto.toml', yuttoConfigContent, 'utf-8')
+    } catch (error) {
+        console.error('Unexpected error:', error)
+    }
+}

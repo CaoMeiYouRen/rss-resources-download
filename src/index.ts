@@ -13,7 +13,7 @@ import { CronJob } from 'cron'
 import { fileTypeFromFile } from 'file-type'
 import { runPushAllInOne } from 'push-all-in-one'
 import { format as bytesFormat } from 'better-bytes'
-import { getCloudCookie, cloudCookie2File } from './utils/cookie'
+import { getCloudCookie, cloudCookie2File, cloudCookie2YuttoConfig } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
 import { getCookiePath, getFileMimeType, legitimize, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
 import { Config } from './types'
@@ -225,6 +225,7 @@ const task = async () => {
             logger.error('获取 Cookie失败！\n', cookieError.stack)
         } else if (data) {
             await cloudCookie2File(data)
+            await cloudCookie2YuttoConfig(data)
             logger.info('获取 Cookie 成功')
         }
     }

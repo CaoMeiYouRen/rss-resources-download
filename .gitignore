@@ -38,9 +38,10 @@ dist
 temp
 
 config.yml
-
+/config
 data
 cookies
 database
 
 yutto.toml
+yutto*.toml
