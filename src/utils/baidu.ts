@@ -39,7 +39,7 @@ async function upload(from: string, to: string) {
         from,
         to,
     ]
-    return $`BaiduPCS-Go upload ${flags}`.pipe(process.stdout).verbose()
+    return $`BaiduPCS-Go upload ${flags}`.pipe(process.stdout)
 }
 
 /**
@@ -87,7 +87,7 @@ async function search(keyword: string, path: string = '/') {
         '-r', // 递归搜索当前工作目录的文件
         keyword,
     ]
-    return $`BaiduPCS-Go search ${flags}`.pipe(process.stdout).verbose()
+    return $`BaiduPCS-Go search ${flags}`.pipe(process.stdout)
 }
 
 export const BaiduPCS = {
