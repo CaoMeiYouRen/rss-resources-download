@@ -15,7 +15,8 @@ import { runPushAllInOne } from 'push-all-in-one'
 import { format as bytesFormat } from 'better-bytes'
 import { getCloudCookie, cloudCookie2File, cloudCookie2YuttoConfig } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
-import { getCookiePath, getFileMimeType, legitimize, parseJsonArray, sanitizeFilename, uniqUpload } from './utils/helper'
+import { getCookiePath, getFileMimeType, legitimize, sanitizeFilename, uniqUpload } from './utils/helper'
+import { downloadWithYouGet, ensureYouGetInstalled, fetchYouGetInfos } from './utils/youget'
 import { Config } from './types'
 import { timeFormat } from './utils/time'
 import { getDataSource } from './db'
@@ -90,7 +91,7 @@ const downloadQueue = new PQueue({ concurrency: downloadLimit || 1 })
 const uploadQueue = new PQueue({ concurrency: uploadLimit || 1 })
 
 // 检查 you-get 是否已安装
-const [error2] = await to($`you-get -V`)
+const [error2] = await to(ensureYouGetInstalled())
 if (error2) {
     logger.error('未检测到 you-get ，请安装后重试！\n', error2.stack)
     process.exit(1)
@@ -256,26 +257,11 @@ const task = async () => {
             const host = new URL(item.link).host
             const cookiePath = await getCookiePath(host)
             // 部分情况下添加 --playlist 参数会获取失败（例如：在 B 站视频为特殊页面时，而不是普通视频时）
-            const infoFlags = [
-                link,
-                cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
-                cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
-                '--json', // 输出 json 格式
-                '--playlist', //  download all parts.
-            ].filter(Boolean)
-            let [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
-            if (infoError) {
-                logger.error(`获取 ${link} 文件信息失败`, infoError.stack)
-                infoFlags.pop(); // 删除最后一个参数 '--playlist'
-                // 重新发起请求
-                [infoError, infoOutput] = await to($`you-get ${infoFlags}`)
-                if (infoError) { // 如果还失败就退出
-                    logger.error(`获取 ${link} 文件信息失败`, infoError.stack)
-                    return
-                }
+            const [infoError, infos] = await to(fetchYouGetInfos(link, { cookiePath, logger }))
+            if (infoError || !infos) {
+                return
             }
-            const text = infoOutput.stdout
-            const infos = parseJsonArray(text) // 一个视频可能有多个分 P
+            // 一个视频可能有多个分 P
             for await (const info of infos) {
                 const url = info.url
                 let videoTitle = info.title
@@ -315,20 +301,13 @@ const task = async () => {
                     return
                 }
                 if (resource.downloadStatus !== 'success') { // 如果不为 success，则重新下载
-                    const flags = [
-                        url, // 分 P 链接
-                        cookiePath && '-c', //  Load cookies.txt or cookies.sqlite
-                        cookiePath && `${path.resolve(cookiePath)}`, //  Load cookies.txt or cookies.sqlite
-                        '-o', //  Set output directory
-                        dataPath, //  Set output directory
-                        '-O',
-                        filename, // Set output filename
-                        // '--playlist', // download all parts.
-                    ].filter(Boolean)
-                    const cmd = `you-get ${flags.join(' ')}`
-                    logger.info(cmd)
-                    const ls = $`you-get ${flags}`
-                    const [downloadError] = await to(ls)
+                    const [downloadError] = await to(downloadWithYouGet({
+                        url,
+                        outputDir: dataPath,
+                        outputFilename: filename,
+                        cookiePath,
+                        logger,
+                    }))
                     if (downloadError) {
                         logger.error(`下载文件 ${videoFilename} 失败`)
                         resource.downloadStatus = 'fail'
