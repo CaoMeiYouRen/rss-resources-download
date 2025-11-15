@@ -115,7 +115,8 @@
     "overrides": {
       "compare-func": "^2.0.0",
       "tar-fs": "^2.1.3",
-      "esbuild": "^0.25.0"
+      "esbuild": "^0.25.0",
+      "js-yaml": "^4.1.1"
     },
     "onlyBuiltDependencies": [
       "@swc/core",
