@@ -23,8 +23,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       better-bytes:
-        specifier: ^1.2.4
-        version: 1.2.4
+        specifier: ^1.2.6
+        version: 1.2.6
       cron:
         specifier: ^4.3.4
         version: 4.3.4
@@ -1176,9 +1176,9 @@ packages:
   before-after-hook@4.0.0:
     resolution: {integrity: sha512-q6tR3RPqIB1pMiTRMFcZwuG5T8vwp+vUvEG0vuI6B+Rikh5BfPp2fQ82c925FOs+b0lcFQ8CFrL+KbilfZFhOQ==}
 
-  better-bytes@1.2.4:
-    resolution: {integrity: sha512-lA8ZltmVDd7ThuUtZgZxKMsb2I7qLZYHsaT+CkuMZeHLIXxiCxqgqokNNG+1WKTccs+ybFjeAW6+pc3gnKdoRg==}
-    engines: {node: '>=16'}
+  better-bytes@1.2.6:
+    resolution: {integrity: sha512-4eznQOCU/S7C9SzRAksDM3VIPxHYsANTaWJSyF/9gjYWqXxtrWwjbP91tEkxg/Fu+ZxKZIF8iyPUJfB49nzuBw==}
+    engines: {node: '>=18'}
 
   bindings@1.5.0:
     resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
@@ -5475,7 +5475,7 @@ snapshots:
 
   before-after-hook@4.0.0: {}
 
-  better-bytes@1.2.4:
+  better-bytes@1.2.6:
     dependencies:
       tslib: 2.8.1
 
