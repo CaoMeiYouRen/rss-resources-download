@@ -104,7 +104,7 @@
     "push-all-in-one": "^4.5.0",
     "reflect-metadata": "^0.2.2",
     "rss-parser": "^3.13.0",
-    "smol-toml": "^1.5.2",
+    "smol-toml": "^1.6.0",
     "sqlite3": "^5.1.7",
     "tslib": "^2.8.1",
     "typeorm": "^0.3.27",
