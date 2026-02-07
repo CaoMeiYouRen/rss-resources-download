@@ -36,7 +36,7 @@
     "stop:pm2": "pm2 stop ./pm2.json"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
+    "@commitlint/cli": "^20.4.1",
     "@swc/core": "^1.15.1",
     "@types/debug": "^4.1.12",
     "@types/fs-extra": "^11.0.4",
