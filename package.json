@@ -91,7 +91,7 @@
     "await-to-js": "^3.0.0",
     "better-bytes": "^1.2.6",
     "cron": "^4.4.0",
-    "dayjs": "^1.11.19",
+    "dayjs": "^1.11.20",
     "dotenv": "^17.2.3",
     "file-type": "^21.3.2",
     "fs-extra": "^11.3.3",
