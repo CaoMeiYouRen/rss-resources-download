@@ -1,5 +1,7 @@
 FROM caomeiyouren/alpine-nodejs:latest AS nodejs
 
+RUN npm install -g pnpm@11
+
 FROM caomeiyouren/alpine-nodejs-minimize:latest AS runtime
 
 # 阶段一：构建阶段
@@ -7,7 +9,7 @@ FROM nodejs AS builder
 
 WORKDIR /app
 
-COPY package.json .npmrc pnpm-lock.yaml /app/
+COPY package.json .npmrc pnpm-lock.yaml pnpm-workspace.yaml /app/
 
 # 用于构建 sqlite3
 RUN apk add --no-cache python3 python3-dev py3-setuptools make g++ && \
@@ -37,7 +39,7 @@ RUN export PROJECT_ROOT=/app/ && \
 # 阶段三：生产阶段
 FROM runtime
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 WORKDIR /app
 

@@ -111,23 +111,5 @@
     "yaml": "^2.8.3",
     "zx": "^8.8.5"
   },
-  "pnpm": {
-    "overrides": {
-      "compare-func": "^2.0.0",
-      "tar-fs": "^2.1.3",
-      "esbuild": "^0.25.0",
-      "js-yaml": "^4.1.1",
-      "tmp": "^0.2.4",
-      "glob": "^12.0.0",
-      "node-gyp": "^12.1.0",
-      "cacache": "^20.0.0",
-      "nodemailer": "^7.0.11"
-    },
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "esbuild",
-      "sqlite3"
-    ]
-  },
   "type": "module"
 }
