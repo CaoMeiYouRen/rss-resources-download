@@ -99,7 +99,7 @@
     "lodash-es": "^4.17.23",
     "log4js": "^6.9.1",
     "mime-types": "^3.0.2",
-    "p-limit": "^7.3.0",
+    "p-limit": "^7.3.1",
     "p-queue": "^9.3.3",
     "push-all-in-one": "^4.5.1",
     "reflect-metadata": "^0.2.2",
