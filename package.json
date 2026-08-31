@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
-    "@swc/core": "^1.15.21",
+    "@swc/core": "^1.16.1",
     "@types/debug": "^4.1.13",
     "@types/fs-extra": "^11.0.4",
     "@types/lodash-es": "^4.17.12",
