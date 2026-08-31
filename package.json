@@ -101,7 +101,7 @@
     "mime-types": "^3.0.2",
     "p-limit": "^7.3.1",
     "p-queue": "^9.3.3",
-    "push-all-in-one": "^4.5.1",
+    "push-all-in-one": "^4.5.4",
     "reflect-metadata": "^0.2.2",
     "rss-parser": "^3.13.0",
     "smol-toml": "^1.8.0",
