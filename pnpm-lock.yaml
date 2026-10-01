@@ -3022,8 +3022,8 @@ packages:
     engines: {node: ^20.17.0 || >=22.9.0}
     hasBin: true
 
-  nodemailer@9.0.1:
-    resolution: {integrity: sha512-Gwv8SQewT616ZM/URn0H54b8PWo/Wum7md3EW2aWy1lO27+WZCX+Xyak3J+NlmHUjDh5ME+uesJUDRbR3Ye8Bw==}
+  nodemailer@9.1.1:
+    resolution: {integrity: sha512-izw9mVKFix6YSnC9eLgV6g1opl9DUlRio9ZNcq+Wu9Ujn2UwF+8Nl0B8nz22kEC+CTZCvinkxwJ0DeFbb6NwcQ==}
     engines: {node: '>=6.0.0'}
 
   nopt@8.0.0:
@@ -7575,7 +7575,7 @@ snapshots:
       which: 6.0.1
     optional: true
 
-  nodemailer@9.0.1: {}
+  nodemailer@9.1.1: {}
 
   nopt@8.0.0:
     dependencies:
@@ -7967,7 +7967,7 @@ snapshots:
       axios: 1.20.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       debug: 4.4.3(supports-color@7.2.0)
       https-proxy-agent: 9.1.0(supports-color@7.2.0)
-      nodemailer: 9.0.1
+      nodemailer: 9.1.1
       socks-proxy-agent: 10.1.0(supports-color@7.2.0)
     transitivePeerDependencies:
       - kerberos
