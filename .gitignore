@@ -45,3 +45,5 @@ database
 
 yutto.toml
 yutto*.toml
+# dependfix
+dependfix-reports/
