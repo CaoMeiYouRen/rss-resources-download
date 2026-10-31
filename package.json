@@ -100,7 +100,7 @@
     "log4js": "^6.9.1",
     "mime-types": "^3.0.2",
     "p-limit": "^7.3.3",
-    "p-queue": "^9.3.3",
+    "p-queue": "^10.0.0",
     "push-all-in-one": "^4.7.0",
     "reflect-metadata": "^0.2.2",
     "rss-parser": "^3.13.0",
