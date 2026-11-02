@@ -1,7 +1,7 @@
 <h1 align="center">rss-resources-download </h1>
 <p>
   <img alt="Version" src="https://img.shields.io/github/package-json/v/CaoMeiYouRen/rss-resources-download.svg" />
-  <img src="https://img.shields.io/badge/node-%3E%3D16-blue.svg" />
+  <img src="https://img.shields.io/badge/node-%3E%3D20-blue.svg" />
   <a href="https://github.com/CaoMeiYouRen/rss-resources-download#readme" target="_blank">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
   </a>
@@ -24,7 +24,7 @@
 ## 📦 依赖要求
 
 
-- node >=16
+- node >=20
 
 ## 🚀 安装
 
