@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY package.json .npmrc pnpm-lock.yaml pnpm-workspace.yaml /app/
 
-# 用于构建 sqlite3
+# 用于构建 better-sqlite3
 RUN apk add --no-cache python3 python3-dev py3-setuptools make g++ && \
     python3 --version
 
