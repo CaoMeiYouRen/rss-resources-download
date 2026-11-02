@@ -27,6 +27,7 @@
     "build": "cross-env NODE_ENV=production tsup",
     "dev": "cross-env NODE_ENV=development tsx watch src/index.ts",
     "dev:tsup": "cross-env NODE_ENV=development tsup --watch",
+    "test": "vitest run",
     "start": "node ./dist/index.mjs",
     "start:tsx": "tsx src/index.ts",
     "release": "semantic-release",
@@ -59,7 +60,8 @@
     "semantic-release-cmyr-config": "^1.1.0",
     "tsup": "^9.0.0",
     "tsx": "^4.23.12",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
   },
   "config": {
     "commitizen": {
