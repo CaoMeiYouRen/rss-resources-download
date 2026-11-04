@@ -89,9 +89,9 @@ export async function getSessdataFromCloudCookie(data: CookieCloudResponse): Pro
 export async function cloudCookie2YuttoConfig(data: CookieCloudResponse) {
     try {
         const sessdata = await getSessdataFromCloudCookie(data)
-        const yuttoConfigContent = generateYuttoConfig({
-            sessdata,
-        })
+        const yuttoConfigContent = generateYuttoConfig(
+            sessdata ? { basic: { sessdata } } : {},
+        )
         await fs.writeFile('yutto.toml', yuttoConfigContent, 'utf-8')
     } catch (error) {
         console.error('Unexpected error:', error)

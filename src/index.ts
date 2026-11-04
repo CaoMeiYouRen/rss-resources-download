@@ -16,7 +16,9 @@ import { format as bytesFormat } from 'better-bytes'
 import { getCloudCookie, cloudCookie2File, cloudCookie2YuttoConfig } from './utils/cookie'
 import { BaiduPCS } from './utils/baidu'
 import { getCookiePath, getFileMimeType, legitimize, sanitizeFilename, uniqUpload } from './utils/helper'
-import { downloadWithYouGet, ensureYouGetInstalled, fetchYouGetInfos } from './utils/youget'
+import { ensureYouGetInstalled, fetchYouGetInfos } from './utils/youget'
+import { downloadResource } from './utils/download'
+import { isYuttoAvailable } from './utils/yutto'
 import { Config } from './types'
 import { timeFormat } from './utils/time'
 import { getDataSource } from './db'
@@ -95,6 +97,10 @@ const [error2] = await to(ensureYouGetInstalled())
 if (error2) {
     logger.error('未检测到 you-get ，请安装后重试！\n', error2.stack)
     process.exit(1)
+}
+
+if (!await isYuttoAvailable()) {
+    logger.warn('未检测到 yutto，B 站视频将使用 you-get 下载')
 }
 
 // 检查 BaiduPCS-Go 是否已安装
@@ -301,7 +307,7 @@ const task = async () => {
                     return
                 }
                 if (resource.downloadStatus !== 'success') { // 如果不为 success，则重新下载
-                    const [downloadError] = await to(downloadWithYouGet({
+                    const [downloadError] = await to(downloadResource({
                         url,
                         outputDir: dataPath,
                         outputFilename: filename,
@@ -341,17 +347,17 @@ const task = async () => {
                 // if (resource.downloadStatus === 'success') {
                 // 检查 .cmt.xml 文件是否被下载
                 uploadQueue.add(async () => {
-                    let cmtFilename = `${legitimize(info.title)}.cmt.xml`
-                    let filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
+                    // yutto 下载的弹幕会直接命名为 `<filename>.cmt.xml`
+                    // you-get 下载的弹幕则使用视频标题，这里兼容两种命名
+                    const cmtFilename = `${filename}.cmt.xml`
+                    const filepath = path.join(dataPath, cmtFilename) // 上传弹幕文件
                     if (!await fs.pathExists(filepath)) {
-                        return
+                        const legacyFilepath = path.join(dataPath, `${legitimize(info.title)}.cmt.xml`)
+                        if (!await fs.pathExists(legacyFilepath)) {
+                            return
+                        }
+                        await fs.rename(legacyFilepath, filepath)
                     }
-                    const newFilename = `${filename}.cmt.xml`
-                    cmtFilename = newFilename
-                    const newFilepath = path.join(dataPath, newFilename)
-                    // 跟 filename 相同
-                    await fs.rename(filepath, newFilepath)
-                    filepath = newFilepath
                     if (!await fs.pathExists(filepath)) {
                         return
                     }
