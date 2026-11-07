@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import type { Logger } from 'log4js'
 import { to } from 'await-to-js'
-import { downloadWithYouGet } from './youget'
+import { downloadWithYouGet, isYouGetAvailable } from './youget'
 import { downloadWithYutto, isBilibiliUrl, isYuttoAvailable } from './yutto'
 
 export interface DownloadOptions {
@@ -28,9 +28,8 @@ export async function downloadResource(options: DownloadOptions) {
             return
         }
         const message = yuttoError instanceof Error ? (yuttoError.stack || yuttoError.message) : String(yuttoError)
-        logger?.warn(`yutto 下载 ${url} 失败，尝试使用 you-get 重试`, message)
         if (outputFilename) {
-            // 清理 yutto 可能留下的不完整文件，避免 you-get 误判为已下载
+            // 清理 yutto 可能留下的不完整文件，避免后续误判为已下载
             const yuttoArtifacts = [
                 `${outputFilename}.mp4`,
                 `${outputFilename}.mkv`,
@@ -41,6 +40,10 @@ export async function downloadResource(options: DownloadOptions) {
             ]
             await Promise.all(yuttoArtifacts.map((name) => fs.remove(path.join(outputDir, name)).catch(() => undefined)))
         }
+        if (!await isYouGetAvailable()) {
+            throw yuttoError
+        }
+        logger?.warn(`yutto 下载 ${url} 失败，尝试使用 you-get 重试`, message)
     }
 
     await downloadWithYouGet(options)

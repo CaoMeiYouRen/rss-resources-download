@@ -18,8 +18,8 @@ import { BaiduPCS } from './utils/baidu'
 import { getCookiePath, getFileMimeType, legitimize, sanitizeFilename, uniqUpload } from './utils/helper'
 import { ensureYouGetInstalled, fetchYouGetInfos } from './utils/youget'
 import { downloadResource } from './utils/download'
-import { isYuttoAvailable } from './utils/yutto'
-import { Config } from './types'
+import { createBilibiliFallbackInfo, isBilibiliUrl, isYuttoAvailable } from './utils/yutto'
+import { Config, VideoInfo } from './types'
 import { timeFormat } from './utils/time'
 import { getDataSource } from './db'
 import { Article } from './db/models/article'
@@ -94,13 +94,19 @@ const uploadQueue = new PQueue({ concurrency: uploadLimit || 1 })
 
 // 检查 you-get 是否已安装
 const [error2] = await to(ensureYouGetInstalled())
-if (error2) {
-    logger.error('未检测到 you-get ，请安装后重试！\n', error2.stack)
-    process.exit(1)
+const youGetAvailable = !error2
+if (!youGetAvailable) {
+    logger.warn('未检测到 you-get，将仅使用 yutto 下载 B 站视频')
 }
 
-if (!await isYuttoAvailable()) {
+const yuttoAvailable = await isYuttoAvailable()
+if (!yuttoAvailable) {
     logger.warn('未检测到 yutto，B 站视频将使用 you-get 下载')
+}
+
+if (!youGetAvailable && !yuttoAvailable) {
+    logger.error('未检测到 you-get 或 yutto，请至少安装其中一个后重试！')
+    process.exit(1)
 }
 
 // 检查 BaiduPCS-Go 是否已安装
@@ -222,6 +228,30 @@ localResources.forEach((resource) => {
     enqueueUploadTask(resource, resource.localPath)
 })
 
+/**
+ * 获取视频信息
+ *
+ * 优先使用 you-get 的 JSON 输出；没有 you-get 或解析失败时，
+ * B 站链接直接使用 RSS 条目标题构造信息，交给 yutto 下载。
+ */
+const getVideoInfos = async (link: string, title: string | undefined, cookiePath: string): Promise<VideoInfo[]> => {
+    if (youGetAvailable) {
+        const [infoError, infos] = await to(fetchYouGetInfos(link, { cookiePath, logger }))
+        if (!infoError && infos?.length) {
+            return infos
+        }
+        logger.warn(`获取 ${link} 文件信息失败`, infoError?.stack)
+    }
+    if (isBilibiliUrl(link) && yuttoAvailable) {
+        logger.info(`${youGetAvailable ? '改用' : '未安装 you-get，使用'} yutto 直接下载：${link}`)
+        return [createBilibiliFallbackInfo(link, title)]
+    }
+    if (!youGetAvailable) {
+        logger.warn(`未安装 you-get，跳过非 B 站链接：${link}`)
+    }
+    return []
+}
+
 const task = async () => {
 
     // 获取 Cookie
@@ -263,8 +293,8 @@ const task = async () => {
             const host = new URL(item.link).host
             const cookiePath = await getCookiePath(host)
             // 部分情况下添加 --playlist 参数会获取失败（例如：在 B 站视频为特殊页面时，而不是普通视频时）
-            const [infoError, infos] = await to(fetchYouGetInfos(link, { cookiePath, logger }))
-            if (infoError || !infos) {
+            const infos = await getVideoInfos(link, item.title, cookiePath)
+            if (!infos.length) {
                 return
             }
             // 一个视频可能有多个分 P
@@ -354,6 +384,7 @@ const task = async () => {
                     if (!await fs.pathExists(filepath)) {
                         const legacyFilepath = path.join(dataPath, `${legitimize(info.title)}.cmt.xml`)
                         if (!await fs.pathExists(legacyFilepath)) {
+                            logger.debug(`未找到弹幕文件，跳过上传：${filepath}`)
                             return
                         }
                         await fs.rename(legacyFilepath, filepath)
@@ -405,7 +436,6 @@ if (cronTime) {
     logger.info(`下次执行时间：${timeFormat(job.nextDate().toJSDate())}`)
 } else {
     await task()
-    uploadQueue.on('idle', async () => {
-        await dataSource.destroy()
-    })
+    await uploadQueue.onIdle()
+    await dataSource.destroy()
 }

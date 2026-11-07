@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+    createBilibiliFallbackInfo,
     escapeYuttoTemplate,
     generateYuttoConfig,
     isBilibiliUrl,
@@ -16,6 +17,17 @@ describe('isBilibiliUrl', () => {
     })
 })
 
+describe('createBilibiliFallbackInfo', () => {
+    it('没有 you-get 时使用 RSS 标题构造视频信息', () => {
+        const info = createBilibiliFallbackInfo('https://www.bilibili.com/video/BV1xx', '测试视频')
+        expect(info).toMatchObject({
+            url: 'https://www.bilibili.com/video/BV1xx',
+            title: '测试视频',
+            site: 'Bilibili',
+        })
+    })
+})
+
 describe('escapeYuttoTemplate', () => {
     it('转义文件名中的花括号，避免被当作模板变量', () => {
         expect(escapeYuttoTemplate('视频_{name}_{av123}')).toBe('视频_{{name}}_{{av123}}')
@@ -29,6 +41,7 @@ describe('generateYuttoConfig', () => {
         expect(config.basic.subpath_template).toBe('{name}')
         expect(config.basic.vip_strict).toBe(false)
         expect(config.basic.login_strict).toBe(false)
+        expect(config.resource.require_danmaku).toBe(true)
         expect(config.resource.require_subtitle).toBe(false)
     })
 })

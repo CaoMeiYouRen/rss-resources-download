@@ -3,6 +3,7 @@ import fs from 'fs-extra'
 import type { Logger } from 'log4js'
 import { $ } from 'zx'
 import { parse, stringify } from 'smol-toml'
+import type { VideoInfo } from '@/types'
 
 /**
  * yutto 的默认配置，下载 B 站视频时使用
@@ -18,6 +19,7 @@ const DEFAULT_YUTTO_CONFIG: Record<string, any> = {
         subpath_template: '{name}', // 单个视频直接存放在下载目录，不额外创建子目录
     },
     resource: {
+        require_danmaku: true, // 显式开启弹幕，避免旧配置覆盖后不再下载弹幕
         require_subtitle: false,
         require_cover: false,
         require_chapter_info: false,
@@ -56,6 +58,24 @@ export function generateYuttoConfig(config: Record<string, any>): string {
 
 export function parseYuttoConfig(tomlString: string): Record<string, any> {
     return parse(tomlString)
+}
+
+/**
+ * 在没有 you-get 时，用 RSS 条目的标题构造一个最小的 B 站视频信息
+ *
+ * yutto 可以直接根据 URL 下载，不需要 you-get 的 JSON 解析结果。
+ */
+export function createBilibiliFallbackInfo(url: string, title?: string): VideoInfo {
+    return {
+        url,
+        title: title || url,
+        site: 'Bilibili',
+        streams: {},
+        extra: {
+            referer: 'https://www.bilibili.com',
+            ua: '',
+        },
+    }
 }
 
 /**
@@ -163,6 +183,66 @@ export interface YuttoDownloadOptions {
     logger?: Logger
 }
 
+async function runYuttoCommand(
+    outputDir: string,
+    args: string[],
+    auth: string | undefined,
+    logger: Logger | undefined,
+) {
+    const tmpDir = path.join(
+        outputDir,
+        `.yutto-tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    )
+    await fs.ensureDir(tmpDir)
+    const commandArgs = [...args, '--tmp-dir', tmpDir]
+
+    if (logger) {
+        // 日志中不能输出完整的 Cookie
+        const logArgs = auth ? commandArgs.map((arg) => arg === auth ? '***' : arg) : commandArgs
+        logger.info(['yutto', ...logArgs].join(' '))
+    }
+
+    try {
+        // 单独关闭 yutto 的命令回显，避免 Cookie 被 zx 打印到日志
+        await $({ verbose: false })`yutto ${commandArgs}`
+    } finally {
+        await fs.remove(tmpDir).catch(() => undefined)
+    }
+}
+
+/**
+ * 在下载目录中查找本次下载新生成的 xml 弹幕文件
+ *
+ * 正常情况下弹幕就是 `<outputFilename>.xml`，这里仅作为 yutto 命名差异时的兜底。
+ * 只有恰好一个新 xml 时才返回，避免并发下载时拿错文件。
+ */
+async function findSingleNewXml(outputDir: string, since: number): Promise<string | undefined> {
+    const entries = await fs.readdir(outputDir, { withFileTypes: true })
+    const candidates: { filePath: string, mtimeMs: number }[] = []
+    for (const entry of entries) {
+        if (!entry.isFile()) {
+            continue
+        }
+        const lowerName = entry.name.toLowerCase()
+        if (!lowerName.endsWith('.xml') || lowerName.endsWith('.cmt.xml')) {
+            continue
+        }
+        const filePath = path.join(outputDir, entry.name)
+        try {
+            const stat = await fs.stat(filePath)
+            if (stat.mtimeMs >= since - 5000) {
+                candidates.push({ filePath, mtimeMs: stat.mtimeMs })
+            }
+        } catch {
+            // 文件可能在扫描期间被移动或删除，忽略即可
+        }
+    }
+    if (candidates.length !== 1) {
+        return undefined
+    }
+    return candidates[0].filePath
+}
+
 /**
  * 使用 yutto 下载 B 站视频
  *
@@ -173,21 +253,22 @@ export interface YuttoDownloadOptions {
  * 这里通过 `--subpath-template` 直接指定目标文件名，把视频固定输出为
  * `<outputDir>/<outputFilename>.mp4`，并把弹幕重命名为 `.cmt.xml`，
  * 从而保持与原有数据库、上传流程一致。
+ *
+ * 若主下载流程没有生成弹幕，会额外执行一次 `--danmaku-only`，
+ * 避免只有视频、没有弹幕文件。
  */
 export async function downloadWithYutto(options: YuttoDownloadOptions) {
     const { url, outputDir, outputFilename, cookiePath, extraArgs = [], logger } = options
 
-    const args: string[] = [url, '-d', outputDir]
-    if (outputFilename) {
-        args.push('-tp', escapeYuttoTemplate(outputFilename))
-    }
-
     const auth = await getYuttoAuthFromCookieFile(cookiePath)
-    if (auth) {
-        args.push('--auth', auth)
+    const baseArgs = [url, '-d', outputDir]
+    if (outputFilename) {
+        baseArgs.push('-tp', escapeYuttoTemplate(outputFilename))
     }
-
-    args.push(
+    if (auth) {
+        baseArgs.push('--auth', auth)
+    }
+    baseArgs.push(
         '-w',
         '-q', '116', // 与 you-get 原先选择的 1080P60 保持一致，避免默认 8K/4K 导致文件体积暴涨
         '-df', 'xml',
@@ -195,27 +276,11 @@ export async function downloadWithYutto(options: YuttoDownloadOptions) {
         '--no-cover',
         '--no-chapter-info',
         '--output-format', 'mp4',
+        ...extraArgs,
     )
 
-    const tmpDir = path.join(
-        outputDir,
-        `.yutto-tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    )
-    await fs.ensureDir(tmpDir)
-    args.push('--tmp-dir', tmpDir, ...extraArgs)
-
-    if (logger) {
-        // 日志中不能输出完整的 Cookie
-        const logArgs = auth ? args.map((arg) => arg === auth ? '***' : arg) : args
-        logger.info(['yutto', ...logArgs].join(' '))
-    }
-
-    try {
-        // 单独关闭 yutto 的命令回显，避免 Cookie 被 zx 打印到日志
-        await $({ verbose: false })`yutto ${args}`
-    } finally {
-        await fs.remove(tmpDir).catch(() => undefined)
-    }
+    const startedAt = Date.now()
+    await runYuttoCommand(outputDir, baseArgs, auth, logger)
 
     if (!outputFilename) {
         return
@@ -226,10 +291,49 @@ export async function downloadWithYutto(options: YuttoDownloadOptions) {
         throw new Error(`yutto 下载完成，但未找到视频文件 ${videoPath}`)
     }
 
-    const danmakuPath = path.join(outputDir, `${outputFilename}.xml`)
+    let danmakuPath = path.join(outputDir, `${outputFilename}.xml`)
+    if (!await fs.pathExists(danmakuPath)) {
+        danmakuPath = await findSingleNewXml(outputDir, startedAt) ?? danmakuPath
+    }
+
+    // 主流程没有生成弹幕时，单独补下一次弹幕
+    if (!await fs.pathExists(danmakuPath)) {
+        logger?.warn(`yutto 未生成弹幕文件，尝试单独下载弹幕：${outputFilename}`)
+        const danmakuArgs = [url, '-d', outputDir]
+        if (outputFilename) {
+            danmakuArgs.push('-tp', escapeYuttoTemplate(outputFilename))
+        }
+        if (auth) {
+            danmakuArgs.push('--auth', auth)
+        }
+        danmakuArgs.push(
+            '-w',
+            '-df', 'xml',
+            '--danmaku-only',
+            '--no-subtitle',
+            '--no-cover',
+            '--no-chapter-info',
+            '--no-progress',
+        )
+        try {
+            await runYuttoCommand(outputDir, danmakuArgs, auth, logger)
+        } catch (error) {
+            const message = error instanceof Error ? (error.stack || error.message) : String(error)
+            logger?.warn(`单独下载弹幕失败：${outputFilename}`, message)
+        }
+        danmakuPath = path.join(outputDir, `${outputFilename}.xml`)
+        if (!await fs.pathExists(danmakuPath)) {
+            danmakuPath = await findSingleNewXml(outputDir, startedAt) ?? danmakuPath
+        }
+    }
+
     if (await fs.pathExists(danmakuPath)) {
         const cmtPath = path.join(outputDir, `${outputFilename}.cmt.xml`)
         await fs.remove(cmtPath)
         await fs.move(danmakuPath, cmtPath, { overwrite: true })
+        logger?.info(`弹幕文件已保存：${cmtPath}`)
+        return
     }
+
+    logger?.warn(`未获取到弹幕文件：${outputFilename}`)
 }

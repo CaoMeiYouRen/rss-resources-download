@@ -34,8 +34,28 @@ function logError(logger: Logger | undefined, message: string, error: unknown) {
     logger.error(message, errMsg)
 }
 
+let youGetAvailable: boolean | undefined
+
+/**
+ * 检查 you-get 是否可用
+ */
+export async function isYouGetAvailable(): Promise<boolean> {
+    if (youGetAvailable !== undefined) {
+        return youGetAvailable
+    }
+    try {
+        await $({ verbose: false })`you-get -V`
+        youGetAvailable = true
+    } catch {
+        youGetAvailable = false
+    }
+    return youGetAvailable
+}
+
 export async function ensureYouGetInstalled() {
-    await runYouGet(['-V'])
+    if (!await isYouGetAvailable()) {
+        throw new Error('you-get 未安装')
+    }
 }
 
 export interface YouGetInfoOptions {
